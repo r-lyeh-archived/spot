@@ -1,0 +1,5 @@
+changed {
+	- added lodepng_encode_memory_std(); with POD arguments only
+}
+
+- rlyeh

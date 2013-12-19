@@ -1,0 +1,2 @@
+- crnlib, by Rich Geldreich, ZLib/libPNG license.
+- crn2dds by r-lyeh, SpartanJ and Evan Parker, public domain.
