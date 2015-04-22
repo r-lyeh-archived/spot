@@ -14,7 +14,7 @@ spot::image transfer( const spot::image &dst, const spot::image &src );
 
 int main( int argc, char **argv ) {
     if( argc < 3 ) {
-        std::cout << argv[0] << " v" VERSION " - quick color transfer. https://github.com/r-lyeh/spot" << std::endl << std::endl;
+        std::cout << argv[0] << " v" VERSION " (libspot v" SPOT_VERSION ") - quick color transfer. https://github.com/r-lyeh/spot" << std::endl << std::endl;
         std::cout << "Usage: " << argv[0] << " image1 image2" << std::endl;
         return -1;
     }

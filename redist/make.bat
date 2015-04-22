@@ -19,8 +19,17 @@ if exist filt.exe exit /b
 if exist transfer.exe del transfer.exe 
 if exist transfer.exe exit /b
 
+set target=
 set devel=/Ox /Oy /DNDEBUG /MT
+
+rem set target=converter.cc
 rem set devel=/Zi /Oy- /DDEBUG /MDd
+
+if not "%target%"=="" (
+for %%i in (..\samples\%target%) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
+converter webp C:\prj\PHD\prototypes\nova_phd\game\data\swf\.textures\assets_Animations_atlas1_LD_alpha.bmp
+exit/b
+)
 
 del info.exe
 for %%i in (..\samples\info.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj

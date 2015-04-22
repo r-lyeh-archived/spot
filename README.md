@@ -191,3 +191,7 @@ class image : public std::vector<color>
 ## notes
 - Samples are Public Domain licensed. Samples use CImg.h by David Tschumperle (CeCILL-C license) to display images. 
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
+
+## changelog
+- 2015/04/23 v2.0.1: bugfixed b/w images;
+- 2015/04/22 v2.0.0: etc1 encode/decode support; pvr3/ktx/pkm load/save support; a few optimizations

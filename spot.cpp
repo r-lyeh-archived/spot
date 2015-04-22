@@ -36179,7 +36179,7 @@ static stbi_uc *decode_etc1_stream(const void *stream, int len, int width, int h
 }
 
 bool stream::is_valid() const {
-	return w && h; // && data && len
+	return w && h && error.empty(); // && data && len
 }
 
 bool stream::is_etc1() const {
@@ -36272,7 +36272,7 @@ stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality
 	out.h = blockh*4;
 	out.d = 1;
 	out.fmt = pvr3::table1::ETC1;
-	out.data = dst;
+	out.out = dst;
 	out.len = len;
 	return out;
 }
@@ -36514,8 +36514,8 @@ namespace spot
 				ss << save_ktx_etc1(sm);
 				uint32_t len32( sm.len );
 				ss.write( (const char *)&len32, 4 );
-				ss.write( (const char *)sm.data, sm.len );
-				delete [] (void *)sm.data;
+				ss.write( (const char *)sm.in, sm.len );
+				delete [] ((uint8_t *)sm.out);
 				return ss.str();
 			}
 			return std::string();
@@ -36526,8 +36526,8 @@ namespace spot
 				stream sm = encode_as_etc1( data, w, h, 32, quality );
 				std::stringstream ss;
 				ss << save_pvr_etc1(sm);
-				ss.write( (const char *)sm.data, sm.len );
-				delete [] (void *)sm.data;
+				ss.write( (const char *)sm.in, sm.len );
+				delete [] ((uint8_t *)sm.out);
 				return ss.str();
 			}
 			return std::string();
@@ -36538,8 +36538,8 @@ namespace spot
 				stream sm = encode_as_etc1( data, w, h, 32, quality );
 				std::stringstream ss;
 				ss << save_pkm_etc1(sm);
-				ss.write( (const char *)sm.data, sm.len );
-				delete [] (void *)sm.data;
+				ss.write( (const char *)sm.in, sm.len );
+				delete [] ((uint8_t *)sm.out);
 				return ss.str();
 			}
 			return std::string();
@@ -36607,9 +36607,10 @@ namespace spot
 	enum { NO_DELETER, STBI_DELETER, FREE_DELETER, NEW_DELETER, NEW_ARRAY_DELETER };
 	enum { UNK, IS_STBI, IS_CRN, IS_WEBP, IS_SVG, IS_KTX, IS_PVR3, IS_PKM };
 
-	stream info( const void *src, size_t len ) {
-		stream sm = {};
-		sm.data = src;
+	bool info( stream &sm, const void *src, size_t len ) {
+		stream blank = {};
+		sm = blank;
+		sm.in = src;
 		sm.len = len;
 
 		const char *src8 = (const char *)src;
@@ -36622,7 +36623,7 @@ namespace spot
 			sm.comp = 4;
 			sm.hint = IS_CRN;
 			sm.deleter = STBI_DELETER;
-			return sm;
+			return true;
 		}
 
 		// pkm? (etc1)
@@ -36635,7 +36636,7 @@ namespace spot
 				sm.h = int(f.hd.height);
 				sm.comp = 3;
 				sm.hint = IS_PKM;
-				return sm;
+				return true;
 			}
 		}
 
@@ -36649,7 +36650,7 @@ namespace spot
 				sm.h = int(f.hd.pixelHeight);
 				sm.comp = 3;
 				sm.hint = IS_KTX;
-				return sm;
+				return true;
 			}
 		}
 
@@ -36663,7 +36664,7 @@ namespace spot
 				sm.h = int(f.hd.height);
 				sm.comp = 3;
 				sm.hint = IS_PVR3;
-				return sm;
+				return true;
 			}
 		}
 
@@ -36671,13 +36672,13 @@ namespace spot
 		int iscompressed = false;
 		int ok = stbi__pvr_info_from_memory( (stbi_uc const *)src, int(len), &sm.w, &sm.h, &sm.comp, &iscompressed );
 		if( ok ) {
-			return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, sm;
+			return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, true;
 		}
 
 		// dds ?
 		ok = stbi__dds_info_from_memory( (stbi_uc const *)src, int(len), &sm.w, &sm.h, &sm.comp, &iscompressed );
 		if( ok ) {
-			return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, sm;
+			return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, true;
 		}
 
 		// try most
@@ -36687,12 +36688,12 @@ namespace spot
 			const char *magic = (const char *)src + len - 4;
 			if( magic[0] == 'p' && magic[1] == 'u' && magic[2] == 'g' && magic[3] == '1' ) sm.comp = 4;
 
-			return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, sm;
+			return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, true;
 		}
 
 		// webp ?
 		ok = 0 != WebPGetInfo( (const uint8_t *)src, len, &sm.w, &sm.h );
-		if( ok ) return sm.hint = IS_WEBP, sm.deleter = FREE_DELETER, sm.comp = 4, sm;
+		if( ok ) return sm.hint = IS_WEBP, sm.deleter = FREE_DELETER, sm.comp = 4, true;
 
 		// svg ?
 		if( src8[0] == '<' || src8[0] == ' ' || src8[0] == '\t' ) {
@@ -36711,31 +36712,18 @@ namespace spot
 
 				nsvgDelete(image);
 				delete [] str;
-				return sm.deleter = FREE_DELETER, sm;
+				return sm.deleter = FREE_DELETER, true;
 			} else {
 				delete [] str;
 			}
 		}
 
-		return stream {};
-	}
-
-	bool info( const void *src, size_t len, int &w, int &h, int &comp, int &hint, int &deleter ) {
-		stream sm = info( src, len );
-		if( !sm.is_valid() ) {
-			return false;
-		}
-		w = sm.w;
-		h = sm.h;
-		comp = sm.comp;
-		hint = sm.hint;
-		deleter = sm.deleter;
-		return true;
+		return false;
 	}
 
 	bool decode( stream &dst, const stream &src )
 	{
-		if( !src.data || !dst.data ) {
+		if( !src.in || !dst.out ) {
 			dst.error = "Error: invalid pointer provided";
 			return false;
 		}
@@ -36750,7 +36738,7 @@ namespace spot
 		int deleter = NO_DELETER;
 
 		if( !src.hint ) {
-			if( !info(src.data, src.len, imageWidth, imageHeight, imageComp, imageHint, deleter ) ) {
+			if( !info( dst, src.in, src.len ) ) {
 				return false;
 			}
 		}
@@ -36767,7 +36755,7 @@ namespace spot
 		break;
 		case IS_CRN :{
 			std::string dds;
-			if( crn2dds( dds, src.data, src.len ) ) {
+			if( crn2dds( dds, src.in, src.len ) ) {
 				imageuc = stbi_load_from_memory( (const unsigned char *)&dds[0], dds.size(), &imageWidth, &imageHeight, &imageComp, 4 );
 				deleter = STBI_DELETER;
 				imageComp = 4;
@@ -36776,7 +36764,7 @@ namespace spot
 		break;
 		case IS_KTX :{
 			unsigned int zlen;
-			const stbi_uc *data = (const stbi_uc *)src.data;
+			const stbi_uc *data = (const stbi_uc *)src.in;
 			imageuc = decode_etc1_stream( &data[sizeof(ktx::header) + 4], src.len - sizeof(ktx::header) - 4, imageWidth, imageHeight, 3, &zlen);
 			deleter = FREE_DELETER;
 			imageComp = 3;
@@ -36784,7 +36772,7 @@ namespace spot
 		break;
 		case IS_PVR3: {
 			unsigned int zlen;
-			const stbi_uc *data = (const stbi_uc *)src.data;
+			const stbi_uc *data = (const stbi_uc *)src.in;
 			imageuc = decode_etc1_stream( &data[sizeof(pvr3::header) + 0], src.len - sizeof(pvr3::header) - 0, imageWidth, imageHeight, 3, &zlen);
 			deleter = FREE_DELETER;
 			imageComp = 3;
@@ -36792,23 +36780,24 @@ namespace spot
 		break;
 		case IS_PKM :{
 			unsigned int zlen;
-			const stbi_uc *data = (const stbi_uc *)src.data;
+			const stbi_uc *data = (const stbi_uc *)src.in;
 			imageuc = decode_etc1_stream( &data[sizeof(pkm::header) + 0], src.len - sizeof(pkm::header) - 0, imageWidth, imageHeight, 3, &zlen);
 			deleter = FREE_DELETER;
 			imageComp = 3;
 		}
 		break;
 		case IS_STBI: {
-			imageuc = stbi_load_from_memory( (const unsigned char *)src.data, src.len, &imageWidth, &imageHeight, &imageComp, imageComp );
+			imageuc = stbi_load_from_memory( (const stbi_uc *)src.in, src.len, &imageWidth, &imageHeight, &imageComp, src.comp < 3 ? 3 : src.comp );
+			imageComp = src.comp < 3 ? 3 : src.comp;
 			deleter = STBI_DELETER;
 			// if it is a .pug file, then decode alpha
-			const char *magic = (const char *)src.data + src.len - 4;
+			const char *magic = (const char *)src.in + src.len - 4;
 			if( magic[0] == 'p' && magic[1] == 'u' && magic[2] == 'g' && magic[3] == '1' ) {
 				imageComp = 4;
-				const int32_t color_size = internals::swapbe( *(const int32_t *)((const char *)src.data + src.len - 12) );
-				const int32_t alpha_size = internals::swapbe( *(const int32_t *)((const char *)src.data + src.len - 8) );
+				const int32_t color_size = internals::swapbe( *(const int32_t *)((const char *)src.in + src.len - 12) );
+				const int32_t alpha_size = internals::swapbe( *(const int32_t *)((const char *)src.in + src.len - 8) );
 				int w2 = 0, h2 = 0, bpp2 = 0;
-				stbi_uc *alpha = stbi_load_from_memory( (const unsigned char *)src.data + color_size, alpha_size, &w2, &h2, &bpp2, 1 );
+				stbi_uc *alpha = stbi_load_from_memory( (const unsigned char *)src.in + color_size, alpha_size, &w2, &h2, &bpp2, 1 );
 				if( alpha ) {
 					stbi_uc *data8 = &alpha[ 0 ], *end8 = &alpha[ w2*h2 ], *dst8 = &imageuc[ 3 ];
 					while( data8 < end8 ) {
@@ -36821,7 +36810,7 @@ namespace spot
 		}
 		break;
 		case IS_WEBP: {
-			imageuc = (stbi_uc *) WebPDecodeRGBA( (const uint8_t *)src.data, src.len, &imageWidth, &imageHeight );
+			imageuc = (stbi_uc *) WebPDecodeRGBA( (const uint8_t *)src.in, src.len, &imageWidth, &imageHeight );
 			deleter = FREE_DELETER;
 			imageComp = 4;
 		}
@@ -36829,7 +36818,7 @@ namespace spot
 		case IS_SVG :{
 			// Load SVG, parse and rasterize
 			char *str = new char[ src.len + 1 ];
-			memcpy( str, src.data, src.len );
+			memcpy( str, src.in, src.len );
 			str[ src.len ] = '\0';
 
 			NSVGimage *image = nsvgParse( str, "px" /*units*/, 96.f /* dpi */ );
@@ -36874,7 +36863,7 @@ namespace spot
 			return false;
 		}
 
-		memcpy( (void *)dst.data, imageuc, imageWidth * imageHeight * imageComp ); //dst.len );
+		memcpy( dst.out, imageuc, imageWidth * imageHeight * imageComp ); //dst.len );
 
 		/****/ if( deleter == STBI_DELETER ) {
 			stbi_image_free( imageuc );
@@ -36897,19 +36886,21 @@ namespace spot
 	}
 
 	std::vector<unsigned char> decode8( const void *src, size_t size, size_t *w, size_t *h, size_t *comp, std::string *error ) {
-		const stream in = info( src, size );
+		stream in = {};
 		stream out = {};
-		if( in.is_valid() ) {
-			std::vector<unsigned char> dst( in.w * in.h * 4 /*srccomp*/ );
-			out.data = &dst[0];
-			out.len = int(dst.size());
-			out.fmt = RGBA_8888;
-			if( decode( out, in ) ) {
-				if( w     ) *w = size_t(out.w);
-				if( h     ) *h = size_t(out.h);
-				if( comp  ) *comp = size_t(out.comp);
-				if( error ) *error = out.error;
-				return dst;
+		if( info( in, src, size ) ) {
+			if( in.is_valid() ) {
+				std::vector<unsigned char> dst( in.w * in.h * 4 /*srccomp*/ );
+				out.out = &dst[0];
+				out.len = int(dst.size());
+				out.fmt = RGBA_8888;
+				if( decode( out, in ) ) {
+					if( w     ) *w = size_t(out.w);
+					if( h     ) *h = size_t(out.h);
+					if( comp  ) *comp = size_t(out.comp);
+					if( error ) *error = out.error;
+					return dst;
+				}
 			}
 		}
 		return std::vector<unsigned char>();

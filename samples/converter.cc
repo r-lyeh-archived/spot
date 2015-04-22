@@ -42,7 +42,7 @@ spot::image build_mipmaps( spot::image img, unsigned maxlevels = 0 ) {
 
 
 int help( int argc, const char **argv ) {
-    std::cout << argv[0] << " v" VERSION "/v" SPOT_VERSION " - quick image converter. https://github.com/r-lyeh/spot" << std::endl << std::endl;
+    std::cout << argv[0] << " v" VERSION " (libspot v" SPOT_VERSION ") - quick image converter. https://github.com/r-lyeh/spot" << std::endl << std::endl;
 
     std::cout << "syntax:   " << argv[0] << " ext image.file [...] [options]" << std::endl << std::endl;
 

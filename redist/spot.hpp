@@ -17,7 +17,7 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.0.0"
+#define SPOT_VERSION "2.0.1"
 
 #include <stddef.h>
 #include <string.h>
@@ -158,11 +158,17 @@ namespace spot
         RGB_888,
         RGBA_8888,
         RGB_ETC1,
+        //RGB_565
+        //RGBA_5551
     };
 
     struct stream {
         int w, h, d, fmt;
-        const void *data; unsigned len;
+        union {
+            const void *in;
+            void *out;
+        };
+        unsigned len;
         int hint, comp, deleter;
         std::string error;
 
@@ -171,16 +177,8 @@ namespace spot
         bool is_compressed() const;
     };
 
-    bool info( const void *src, size_t len, int &w, int &h, int &comp, int &hint, int &deleter );
-    stream info( const void *data, size_t len );
-
-    bool decode( stream &dst, stream &src,
-        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
-
-    bool decode( 
-        /***/ void *dst, size_t dst_len, unsigned dst_fmt, 
-        const void *ptr, size_t ptr_len, unsigned src_fmt,
-        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
+    bool info( stream &nfo, const void *data, size_t len );
+    bool decode( stream &dst, const stream &src );
 
     std::vector<unsigned char> decode8(
         const void *ptr, size_t size,
@@ -207,7 +205,7 @@ namespace spot
     union color;
 
     union pixel {
-        using T = unsigned char;
+        typedef unsigned char T;
 
         enum { empty = 0, fill = 255 };
 
@@ -251,7 +249,7 @@ namespace spot
 
     union color
     {
-        using T = float;
+        typedef float T;
 
         enum { empty = 0, fill = 1 };
 
@@ -416,12 +414,14 @@ namespace spot
     class rect : public std::vector<unit> {
         public:
 
-        unsigned id = 0;   // may be used with your engine, texture/resource ID maybe?
-        float delay = 0.f; // may be used with your engine, frame delay (when loading an animation)
-        size_t w = 0, h = 0, d = 0;
-        int space = SPACE_RGBA;
+        unsigned id;   // may be used with your engine, texture/resource ID maybe?
+        float delay;   // may be used with your engine, frame delay (when loading an animation)
+        size_t w, h, d;
+        int space;
 
-        rect( size_t w = 0, size_t h = 0, size_t d = 0, const unit &filler = unit() ) : w(w), h(h), d(d), std::vector<unit>(w*(h?h:1)*(d?d:1),filler)
+        rect( size_t w = 0, size_t h = 0, size_t d = 0, const unit &filler = unit() ) :
+			id(0), delay(0), w(w), h(h), d(d), space(SPACE_RGBA),
+			std::vector<unit>(w*(h?h:1)*(d?d:1),filler)
         {}
 
         bool loaded() const {
@@ -1254,9 +1254,27 @@ namespace spot
             load( ptr, len );
         }
 
-        texture( const stream &st ) : rect<pixel>(st.w,st.h,st.d) {
+        texture( const stream &sm ) : rect<pixel>(sm.w,sm.h,sm.d) {
+			init( sm );
+		}
+
+        texture( const void *ptr, unsigned len, unsigned w, unsigned h, unsigned d = 0, unsigned fmt = RGB_888 ) : rect<pixel>(w,h,d) {
+			stream sm = {};
+			sm.w = w;
+			sm.h = h;
+			sm.d = d;
+			sm.fmt = fmt;
+			sm.in = ptr;
+			sm.len = len;
+			sm.comp = 0;
+			sm.deleter = 0;
+			sm.hint = 0;
+			init( sm );
+        }	
+
+		private: void init( const stream &st ) {
             if( st.fmt == RGB_888 ) {
-                uint8_t *rgb = (uint8_t*)st./*block.*/data;
+                uint8_t *rgb = (uint8_t*)st.in;
                 for( auto &px : *this ) {
                     px.r = *rgb++;
                     px.g = *rgb++;
@@ -1265,7 +1283,7 @@ namespace spot
                 }
             }
             if( st.fmt == RGBA_8888 ) {
-                uint8_t *rgba = (uint8_t*)st./*block.*/data;
+                uint8_t *rgba = (uint8_t*)st.in;
                 for( auto &px : *this ) {
                     px.r = *rgba++;
                     px.g = *rgba++;
@@ -1273,10 +1291,6 @@ namespace spot
                     px.a = *rgba++;
                 }
             }
-        }
-
-        texture( const void *ptr, unsigned len, unsigned w, unsigned h, unsigned d = 0, unsigned fmt = RGB_888 ) 
-            : texture( stream { int(w),int(h),int(d),int(fmt),ptr,len,0,0,0 /*mem( ptr,len )*/ } ) {
         }
     };
 
