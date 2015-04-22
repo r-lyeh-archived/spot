@@ -4,8 +4,8 @@ Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-
 - Spot is a compact and embeddable pixel/image library (C++11).
 - Spot supports both RGBA/HSLA pixel types.
 - Spot provides both pixel and image algebra for pixel/image manipulation.
-- Spot loads WebP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PKM (ETC1), PVR (PVRTC), HDR, PIC, PNM (PPM/PGM), CRN, PUG and vectorial SVG files.
-- Spot saves WebP, JPG, PNG, TGA, BMP, PUG and DDS files.
+- Spot loads WEBP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PVR2 (PVRTC), PVR3 (ETC1), KTX (ETC1), PKM (ETC1), HDR, PIC, PNM (PPM/PGM), CRN, PUG and vectorial SVG files.
+- Spot saves WEBP, JPG, PNG, TGA, BMP, DDS, PVR3 (ETC1), KTX (ETC1), PKM (ETC1) and PUG files.
 - Spot is self-contained. All libraries are included and amalgamated.
 - Spot is tiny. A couple of source files.
 - Spot is cross-platform.
@@ -22,16 +22,20 @@ Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-
 | HDR files | yes | no |
 | JPG files (progressive) | yes | no |
 | JPG files | yes | yes |
+| KTX (ETC1) files | yes* | yes* |
 | PIC files | yes | no |
-| PKM (ETC1) files | yes | no |
+| PKM (ETC1) files | yes | yes |
 | PNG files | yes | yes |
 | PNM (PPM/PGM) files | yes | no |
 | PSD files | yes | no |
 | PUG files | yes | yes |
-| PVR (PVRTC) files | yes | no |
+| PVR2 (PVRTC) files | yes* | no |
+| PVR3 (ETC1) files | yes* | yes* |
 | SVG files (rasterized) | yes | no |
 | TGA files | yes | yes |
-| WebP files | yes | yes |
+| WEBP files | yes | yes |
+
+(*) partially supported, preliminary, warning, caution, atchung, beware of dog
 
 ## todo
 - document api
@@ -44,16 +48,18 @@ class image : public std::vector<color>
 {
     public:
 
-    size_t w, h;
+    size_t w, h, d;
     float delay; // frame delay, when loading an animation
 
     image();
-    image( size_t _w, size_t _h, const color &filler = color::hsla() );
+    image( size_t w, size_t h, size_t d = 0, const color &filler = color::hsla() );
     explicit image( const std::string &filename, bool mirror_w = false, bool mirror_h = false );
     explicit image( const void *ptr, size_t len, bool mirror_w = false, bool mirror_h = false );
 
     bool load( const void *ptr, size_t len, bool mirror_w = false, bool mirror_h = false );
     bool load( const std::string &filename, bool mirror_w = false, bool mirror_h = false );
+    
+    bool save( const std::string &filename ) const;
 
     bool save_as_bmp( const std::string &filename ) const;
     bool save_as_dds( const std::string &filename ) const;
@@ -61,23 +67,35 @@ class image : public std::vector<color>
     bool save_as_png( const std::string &filename, unsigned stride = 4 ) const;
     bool save_as_pug( const std::string &filename, unsigned quality = 90 ) const;
     bool save_as_jpg( const std::string &filename, unsigned quality = 90 ) const;
-    bool save_as_webp( const std::string &filename, unsigned quality = 90 ) const;
+    bool save_as_webp(const std::string &filename, unsigned quality = 90 ) const;
+    bool save_as_ktx( const std::string &filename, unsigned quality = 10 ) const;
+    bool save_as_pvr( const std::string &filename, unsigned quality = 10 ) const;
+    bool save_as_pkm( const std::string &filename, unsigned quality = 10 ) const;
 
     std::string encode_as_png( unsigned stride = 4 ) const;
     std::string encode_as_pug( unsigned quality = 90 ) const;
     std::string encode_as_jpg( unsigned quality = 90 ) const;
-    std::string encode_as_webp( unsigned quality = 90 ) const;
+    std::string encode_as_webp(unsigned quality = 90 ) const;
+    std::string encode_as_ktx( unsigned quality = 10 ) const;
+    std::string encode_as_pvr( unsigned quality = 10 ) const;
+    std::string encode_as_pkm( unsigned quality = 10 ) const;
 
-    inline const size_t size() const { return this->std::vector<color>::size(); }
-    bool loaded() const { return this->std::vector<color>::size() != 0; }
+    inline const size_t size() const;
+    bool loaded() const;
 
-    inline color &at( size_t offset ) { return this->std::vector<color>::at( offset ); }
-    inline color &at( size_t x, size_t y ) { return this->std::vector<color>::at( x + y * w ); }
-    inline color &atf( float x01, float y01 ) { return this->at( x01 * (w-1), y01 * (h-1) ); }
+    inline color &at( size_t offset );
+    inline color &at( size_t x, size_t y );
+    inline color &at( size_t x, size_t y, size_t z );
+    inline color &atf( float x01 );
+    inline color &atf( float x01, float y01 );
+    inline color &atf( float x01, float y01, float z01 );
 
-    inline const color &at( size_t offset ) const { return this->std::vector<color>::at( offset ); }
-    inline const color &at( size_t x, size_t y ) const { return this->std::vector<color>::at( x + y * w ); }
-    inline const color &atf( float x01, float y01 ) const { return this->at( x01 * (w-1), y01 * (h-1) ); }
+    inline const color &at( size_t offset ) const;
+    inline const color &at( size_t x, size_t y ) const;
+    inline const color &at( size_t x, size_t y, size_t z ) const;
+    inline const color &atf( float x01 ) const;
+    inline const color &atf( float x01, float y01 ) const;
+    inline const color &atf( float x01, float y01, float z01 ) const;
 
     image copy( size_t ox, size_t oy, size_t w = ~0, size_t h = ~0 ) const;
     image paste( size_t at_x, size_t at_y, const image &other ) const;
@@ -104,11 +122,12 @@ class image : public std::vector<color>
     image to_premultiplied_alpha() const;
     image to_straight_alpha() const;
 
-    std::vector<unsigned int>  rgba_data_32() const;
-    std::vector<unsigned char> rgba_data() const;
-    std::vector<unsigned char> rgb_data() const;
-    std::vector<unsigned char> ya_data() const;
-    std::vector<unsigned char> y_data() const;
+    std::vector<unsigned int>  rgba32() const;
+    std::vector<unsigned char> rgbx( unsigned char ) const;
+    std::vector<unsigned char> rgba() const;
+    std::vector<unsigned char> rgb() const;
+    std::vector<unsigned char> ya() const;
+    std::vector<unsigned char> y() const;
 };
 ```
 
@@ -124,10 +143,28 @@ class image : public std::vector<color>
     spot::image warmer = img + spot::hsla( -0.08f, 0, 0, 0 );
     spot::image colder = img + spot::hsla(  0.08f, 0, 0, 0 );
 
-    gray.save_as_png ( "output.png" );
-    gray.save_as_jpg ( "output.jpg", 85 );
-    gray.save_as_pug ( "output.pug", 85 );
-    gray.save_as_webp( "output.webp", 85 );
+    img.save_as_bmp("collage.bmp");
+    img.save_as_dds("collage.dds");
+    img.save_as_jpg("collage.jpg", 80);
+    img.save_as_ktx("collage.ktx", 10);
+    img.save_as_pkm("collage.pkm", 10);
+    img.save_as_png("collage.png");
+    img.save_as_pug("collage.pug", 80);
+    img.save_as_pvr("collage.pvr", 10);
+    img.save_as_webp("collage.webp", 80);
+```
+
+## possible output
+```bash
+22/04/2015  16:32           607.990 collage.bmp
+22/04/2015  16:32           203.264 collage.dds
+22/04/2015  16:32            44.040 collage.jpg
+22/04/2015  16:32           100.900 collage.ktx
+22/04/2015  16:32           100.848 collage.pkm
+22/04/2015  16:32           296.306 collage.png
+22/04/2015  16:32            44.225 collage.pug
+22/04/2015  16:32           100.884 collage.pvr
+22/04/2015  16:32            32.384 collage.webp
 ```
 
 ![image](https://raw.github.com/r-lyeh/depot/master/spot_collage.jpg)
@@ -137,18 +174,20 @@ class image : public std::vector<color>
 
 ## licenses
 - [spot](https://github.com/r-lyeh/spot) (BOOST licensed).
+- [crn2dds](redist/deps/crn2dds) by r-lyeh, SpartanJ and Evan Parker (Public Domain).
+- [crnlib](https://code.google.com/p/crunch/), by Rich Geldreich (ZLIB license).
+- [DDS writer](http://www.lonesock.net/soil.html) by Jonathan Dummer (Public Domain).
+- [etc1utils](redist/deps/soil2/etc1_utils.h) by Google Inc (Apache 2.0 license).
+- [jpge](https://code.google.com/p/jpeg-compressor/) by Rich Geldreich (Public Domain).
+- [libwebp](https://code.google.com/p/webp/) by Google Inc (BSD license).
+- [lodepng](http://lodev.org/lodepng/) by Lode Vandevenne (ZLIB license).
+- [nanosvg](https://github.com/memononen/nanosvg/) by Mikko Mononen (ZLIB license).
+- [pngrim](https://github.com/fgenesis/pngrim) alpha bleeding algorithm by F-Genesis (Public Domain).
 - [pug](https://github.com/r-lyeh/pug) (Public Domain).
+- [rg_etc1](https://code.google.com/p/rg-etc1/) by Rich Geldreich (ZLIB license).
 - [soil2](https://bitbucket.org/SpartanJ/soil2/) by Martin Lucas Golini and Jonathan Dummer (Public Domain).
 - [stb_image](http://github.com/nothings/stb) by Sean Barrett (Public Domain).
-- [DDS writer](http://www.lonesock.net/soil.html) by Jonathan Dummer (Public Domain).
-- [jpge](https://code.google.com/p/jpeg-compressor/) by Rich Geldreich (Public Domain).
-- [nanosvg](https://github.com/memononen/nanosvg/) by Mikko Mononen (ZLIB license).
-- [lodepng](http://lodev.org/lodepng/) by Lode Vandevenne (ZLIB license).
-- [libwebp](https://code.google.com/p/webp/) by Google Inc (BSD license).
-- [pngrim](https://github.com/fgenesis/pngrim) alpha bleeding algorithm by F-Genesis (Public Domain).
-- [crnlib](https://code.google.com/p/crunch/), by Rich Geldreich (ZLIB license).
-- [crn2dds](redist/deps/crn2dds) by r-lyeh, SpartanJ and Evan Parker (Public Domain).
 
-## note
+## notes
 - Samples are Public Domain licensed. Samples use CImg.h by David Tschumperle (CeCILL-C license) to display images. 
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.

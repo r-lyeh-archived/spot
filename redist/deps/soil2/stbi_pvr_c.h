@@ -943,14 +943,14 @@ static stbi_uc * stbi__pvr_load(stbi__context *s, int *x, int *y, int *comp, int
 	levelSize = (s->img_x * s->img_y * header.dwBitCount + 7) / 8;
 
 	// get the raw data
-	pvr_data = (stbi_uc *)malloc( levelSize );
+	pvr_data = (stbi_uc *)STBI_MALLOC( levelSize );
 	stbi__getn( s, pvr_data, levelSize );
 
 	// if compressed decompress as RGBA
 	if ( iscompressed ) {
-		pvr_res_data = (stbi_uc *)malloc( s->img_x * s->img_y * 4 );
+		pvr_res_data = (stbi_uc *)STBI_MALLOC( s->img_x * s->img_y * 4 );
 		Decompress( (AMTC_BLOCK_STRUCT*)pvr_data, bitmode, s->img_x, s->img_y, 1, (unsigned char*)pvr_res_data );
-		free( pvr_data );
+		STBI_FREE( pvr_data );
 	} else {
 		// otherwise use the raw data
 		pvr_res_data = pvr_data;

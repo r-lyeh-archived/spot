@@ -17,8 +17,11 @@
 
 #pragma once
 
+#define SPOT_VERSION "2.0.0"
+
 #include <stddef.h>
 #include <string.h>
+#include <stdint.h>
 #include <algorithm>
 #include <fstream>
 #include <map>
@@ -26,8 +29,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#define SPOT_VERSION "1.0.0"
 
 // i hate people (wingdi.h) {
 #ifdef RGB
@@ -41,9 +42,14 @@ extern "C" int stbi_write_dds( char const *filename, int w, int h, int comp, con
 extern "C" int stbi_write_tga( char const *filename, int w, int h, int comp, const void *data );
 // }
 
+//#include "redist/deps/vector_view.hpp"
+
 namespace spot
 {
+    extern bool devel;
+
     enum {
+        SPOT_FAST_QUALITY = 10,
         SPOT_DEFAULT_QUALITY = 90
     };
 
@@ -52,32 +58,145 @@ namespace spot
         std::string encode_jpg( unsigned w, unsigned h, const void *data, unsigned quality );
         std::string encode_pug( unsigned w, unsigned h, const void *data, unsigned quality );
         std::string encode_wbp( unsigned w, unsigned h, const void *data, unsigned quality );
+        std::string encode_ktx( unsigned w, unsigned h, const void *data, unsigned quality );
+        std::string encode_pvr( unsigned w, unsigned h, const void *data, unsigned quality );
+        std::string encode_pkm( unsigned w, unsigned h, const void *data, unsigned quality );
         bool writefile( const std::string &filename, const std::string &data );
     }
 
-    std::vector<unsigned char> decode8( const void *ptr, size_t size,
-        size_t *w = 0, size_t *h = 0,
-        std::string *error = 0,
-        bool make_squared = false,
-        bool mirror_w = false, bool mirror_h = false );
+#if 0
+    struct mem {
+        enum {
+            none,
+            use_malloc,
+            use_array_8,
+            use_array_16,
+            use_array_32,
+            use_vector_8,
+            use_vector_16,
+            use_vector_32,
+        };
 
-    std::vector<unsigned char> decode8( const std::string &filename,
-        size_t *w = 0, size_t *h = 0,
-        std::string *error = 0,
-        bool make_squared = false,
-        bool mirror_w = false, bool mirror_h = false );
+        union {
+        void     *ptr;
+        uint8_t  *ptr8;
+        uint16_t *ptr16;
+        uint32_t *ptr32;
+        std::vector<uint8_t>  *v8;
+        std::vector<uint16_t> *v16;
+        std::vector<uint32_t> *v32;
+        };
+        unsigned len;
+        unsigned allocator;
 
-    std::vector<unsigned int> decode32( const void *ptr, size_t size,
-        size_t *w = 0, size_t *h = 0,
-        std::string *error = 0,
-        bool make_squared = false,
-        bool mirror_w = false, bool mirror_h = false );
+        mem() : mem(0,0,none)
+        {}
 
-    std::vector<unsigned int> decode32( const std::string &filename,
-        size_t *w = 0, size_t *h = 0,
-        std::string *error = 0,
-        bool make_squared = false,
-        bool mirror_w = false, bool mirror_h = false );
+        mem( void *ptr, unsigned len, unsigned allocator ) {
+            assign( ptr, len, allocator );
+        }
+
+        void assign( void *ptr, unsigned len, unsigned allocator ) {
+            clear();
+            this->ptr = ptr;
+            this->len = len;
+            this->allocator = allocator;           
+        }
+
+        void *data() const {
+            /**/ if( allocator == use_malloc ) return ptr;
+            else if( allocator == use_array_8 ) return ptr8;
+            else if( allocator == use_array_16 ) return ptr16;
+            else if( allocator == use_array_32 ) return ptr32;
+            else if( allocator == use_vector_8 ) return v8->data();
+            else if( allocator == use_vector_16 ) return v16->data();
+            else if( allocator == use_vector_32 ) return v32->data();
+            return 0;
+        }
+
+        void clear() {
+            if( ptr && allocator > 0 ) {
+                /**/ if( allocator == use_malloc ) free( ptr );
+                else if( allocator == use_array_8 ) delete [] ptr8;
+                else if( allocator == use_array_16 ) delete [] ptr16;
+                else if( allocator == use_array_32 ) delete [] ptr32;
+                else if( allocator == use_vector_8 ) delete v8;
+                else if( allocator == use_vector_16 ) delete v16;
+                else if( allocator == use_vector_32 ) delete v32;
+                ptr = 0;
+            }
+        }
+
+        ~mem() {
+            clear();
+        }
+
+        mem( const mem &other ) {
+            operator=(other);
+        }
+
+        mem &operator=( const mem &other ) {
+            if( this != &other ) {
+                assign( other.ptr, other.len, other.allocator );
+                if( allocator ) {
+                    /**/ if( allocator == use_malloc ) ptr = malloc( len );
+                    else if( allocator == use_array_8 ) ptr8 = new uint8_t [ len ];
+                    else if( allocator == use_array_16 ) ptr16 = new uint16_t [ len / 2 + 1 ];
+                    else if( allocator == use_array_32 ) ptr32 = new uint32_t [ len / 4 + 1 ];
+                    else if( allocator == use_vector_8 ) v8 = new std::vector<uint8_t>( len );
+                    else if( allocator == use_vector_16 ) v16 = new std::vector<uint16_t>( len / 2 + 1 );
+                    else if( allocator == use_vector_32 ) v32 = new std::vector<uint32_t>( len / 4 + 1 );
+                }
+                memcpy( ptr, other.ptr, other.len );
+            }
+            return *this;
+        }
+    };
+#endif    
+
+    enum texel_formats {
+        RGB_888,
+        RGBA_8888,
+        RGB_ETC1,
+    };
+
+    struct stream {
+        int w, h, d, fmt;
+        const void *data; unsigned len;
+        int hint, comp, deleter;
+        std::string error;
+
+        bool is_valid() const;
+        bool is_etc1() const;
+        bool is_compressed() const;
+    };
+
+    bool info( const void *src, size_t len, int &w, int &h, int &comp, int &hint, int &deleter );
+    stream info( const void *data, size_t len );
+
+    bool decode( stream &dst, stream &src,
+        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
+
+    bool decode( 
+        /***/ void *dst, size_t dst_len, unsigned dst_fmt, 
+        const void *ptr, size_t ptr_len, unsigned src_fmt,
+        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
+
+    std::vector<unsigned char> decode8(
+        const void *ptr, size_t size,
+        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
+
+    std::vector<unsigned char> decode8(
+        const std::string &filename,
+        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
+
+    std::vector<unsigned int> decode32(
+        const void *ptr, size_t size,
+        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
+
+    std::vector<unsigned int> decode32(
+        const std::string &filename,
+        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
 
     std::vector<std::string> list_supported_inputs();
     std::vector<std::string> list_supported_outputs();
@@ -299,10 +418,10 @@ namespace spot
 
         unsigned id = 0;   // may be used with your engine, texture/resource ID maybe?
         float delay = 0.f; // may be used with your engine, frame delay (when loading an animation)
-        size_t w = 0, h = 0;
+        size_t w = 0, h = 0, d = 0;
         int space = SPACE_RGBA;
 
-        rect( size_t w = 0, size_t h = 0, const unit &filler = unit() ) : w(w), h(h), std::vector<unit>(w*h,filler)
+        rect( size_t w = 0, size_t h = 0, size_t d = 0, const unit &filler = unit() ) : w(w), h(h), d(d), std::vector<unit>(w*(h?h:1)*(d?d:1),filler)
         {}
 
         bool loaded() const {
@@ -311,29 +430,56 @@ namespace spot
 
         // unit/subunit accesors
 
+        // 1d manipulation
+
         inline unit &at( size_t offset ) {
-            return this->std::vector<unit>::at( offset );
+            return this->std::vector<unit>::operator[]( offset );
         }
+        inline unit &atf( float x01 ) {
+            return this->at( x01 * (w-1) );
+        }
+        inline const unit &at( size_t offset ) const {
+            return this->std::vector<unit>::operator[]( offset );
+        }
+        inline const unit &atf( float x01 ) const {
+            return this->at( x01 * (w-1) );
+        }
+
+        // [...] copy, paste...
+
+        // 3d manipulation
+
+        inline unit &at( size_t x, size_t y, size_t z ) {
+            return this->std::vector<unit>::operator[]( x + y * w + z * w * h );
+        }
+        inline unit &atf( float x01, float y01, float z01 ) {
+            return this->at( x01 * (w-1), y01 * (h-1), z01 * (d-1) );
+        }
+        inline const unit &at( size_t x, size_t y, size_t z ) const {
+            return this->std::vector<unit>::operator[]( x + y * w + z * w * h );
+        }
+        inline const unit &atf( float x01, float y01, float z01 ) const {
+            return this->at( x01 * (w-1), y01 * (h-1), z01 * (d-1) );
+        }
+
+        // [...] copy, paste...
+
+        // 2d manipulation
+
         inline unit &at( size_t x, size_t y ) {
-            return this->std::vector<unit>::at( x + y * w );
+            return this->std::vector<unit>::operator[]( x + y * w );
         }
         inline unit &atf( float x01, float y01 ) {
             return this->at( x01 * (w-1), y01 * (h-1) );
         }
-
-        inline const unit &at( size_t offset ) const {
-            return this->std::vector<unit>::at( offset );
-        }
         inline const unit &at( size_t x, size_t y ) const {
-            return this->std::vector<unit>::at( x + y * w );
+            return this->std::vector<unit>::operator[]( x + y * w );
         }
         inline const unit &atf( float x01, float y01 ) const {
             return this->at( x01 * (w-1), y01 * (h-1) );
         }
 
-        // manipulation
-
-        rect copy( size_t ox, size_t oy, size_t w = ~0, size_t h = ~0 ) const {
+        rect copy( size_t ox, size_t oy, size_t w = ~0, size_t h = ~0, size_t d = ~0 ) const {
             if( w == ~0 ) w = this->w - ox;
             if( h == ~0 ) h = this->h - oy;
 
@@ -539,13 +685,33 @@ namespace spot
         // import/export
 
         bool load( const std::string &pathfile) {
-            std::string error = image_load( pathfile, &w, &h, *this );
+            size_t comp;
+            std::string error = image_load( pathfile, &w, &h, &comp, *this );
             return error.empty() ? true : false;
         }
 
         bool load( const void *ptr, size_t len) {
-            std::string error = image_load( (const unsigned char *)ptr, len, &w, &h, *this );
+            size_t comp;
+            std::string error = image_load( (const unsigned char *)ptr, len, &w, &h, &comp, *this );
             return error.empty() ? true : false;
+        }
+
+        bool save( const std::string &filename, unsigned quality = SPOT_DEFAULT_QUALITY ) {
+            std::string ext = filename.substr( filename.find_last_of('.') + 1 );
+            if( ext != filename ) {
+                for( auto &ch : ext ) if( ch >= 'A' && ch <= 'Z' ) ch = ch - 'A' + 'a';
+                if( ext == "bmp" ) return save_as_bmp( filename );
+                if( ext == "dds" ) return save_as_dds( filename );
+                if( ext == "tga" ) return save_as_tga( filename );
+                if( ext == "png" ) return save_as_png( filename );
+                if( ext == "jpg" ) return save_as_jpg( filename, quality );
+                if( ext == "pug" ) return save_as_pug( filename, quality );
+                if( ext == "ktx" ) return save_as_ktx( filename, quality );
+                if( ext == "pvr" ) return save_as_pvr( filename, quality );
+                if( ext == "pkm" ) return save_as_pkm( filename, quality );
+                if( ext == "webp") return save_as_webp( filename, quality );
+            }
+            return false;
         }
 
         bool save_as_bmp( const std::string &filename ) const {
@@ -638,12 +804,57 @@ namespace spot
             return internals::writefile( filename, encode_as_webp( quality ) );
         }
 
+        std::string encode_as_ktx( unsigned quality = SPOT_FAST_QUALITY ) const {
+            if( this->empty() || w * h <= 0 ) {
+                return std::string();
+            }
+            std::vector<unsigned char> pixels = rgbx(255);
+            return internals::encode_ktx( w, h, &pixels[0], quality );
+        }
+
+        bool save_as_ktx( const std::string &filename, unsigned quality = SPOT_FAST_QUALITY ) const {
+            if( this->empty() || w * h <= 0 ) {
+                return false;
+            }
+            return internals::writefile( filename, encode_as_ktx( quality ) );
+        }
+
+        std::string encode_as_pvr( unsigned quality = SPOT_FAST_QUALITY ) const {
+            if( this->empty() || w * h <= 0 ) {
+                return std::string();
+            }
+            std::vector<unsigned char> pixels = rgbx(255);
+            return internals::encode_pvr( w, h, &pixels[0], quality );
+        }
+
+        bool save_as_pvr( const std::string &filename, unsigned quality = SPOT_FAST_QUALITY ) const {
+            if( this->empty() || w * h <= 0 ) {
+                return false;
+            }
+            return internals::writefile( filename, encode_as_pvr( quality ) );
+        }
+
+        std::string encode_as_pkm( unsigned quality = SPOT_FAST_QUALITY ) const {
+            if( this->empty() || w * h <= 0 ) {
+                return std::string();
+            }
+            std::vector<unsigned char> pixels = rgbx(255);
+            return internals::encode_pkm( w, h, &pixels[0], quality );
+        }
+
+        bool save_as_pkm( const std::string &filename, unsigned quality = SPOT_FAST_QUALITY ) const {
+            if( this->empty() || w * h <= 0 ) {
+                return false;
+            }
+            return internals::writefile( filename, encode_as_pkm( quality ) );
+        }
+
         // helpers
 
-        std::string image_load( const unsigned char *ptr, size_t size, size_t *w, size_t *h, std::vector<pixel> &image )
+        std::string image_load( const unsigned char *ptr, size_t size, size_t *w, size_t *h, size_t *comp, std::vector<pixel> &image )
         {
             std::string error;
-            std::vector<unsigned char> data = spot::decode8( ptr, size, w, h, &error, false, false, false );
+            std::vector<unsigned char> data = spot::decode8( ptr, size, w, h, comp, &error );
 
             if( data.empty() || error.size() ) {
                 return error;
@@ -652,6 +863,16 @@ namespace spot
             image.resize( (*w) * (*h) );
 
             const unsigned char *data8( data.data() );
+
+            if( *comp == 3 )
+            for( size_t i = 0, e = image.size(); i < e; ++i ) {
+                unsigned char r = *data8++;
+                unsigned char g = *data8++;
+                unsigned char b = *data8++;
+                image.at(i) = pixel( r, g, b, 255 );
+            }
+
+            if( *comp == 4 )
             for( size_t i = 0, e = image.size(); i < e; ++i ) {
                 unsigned char r = *data8++;
                 unsigned char g = *data8++;
@@ -664,7 +885,7 @@ namespace spot
         }
 
         template<typename COLOR>
-        std::string image_load( const std::string &pathfile, size_t *w, size_t *h, std::vector<COLOR> &image )
+        std::string image_load( const std::string &pathfile, size_t *w, size_t *h, size_t *comp, std::vector<COLOR> &image )
         {
             if( pathfile.empty() ) {
                 return "Error! empty filename";
@@ -677,7 +898,7 @@ namespace spot
 
             std::vector<char> buffer( (std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
-            std::string err = image_load( (const unsigned char *)buffer.data(), buffer.size(), w, h, image );
+            std::string err = image_load( (const unsigned char *)buffer.data(), buffer.size(), w, h, comp, image );
             return err.empty() ? std::string() : ( err + ", while reading file: " + pathfile );
         }
 
@@ -693,6 +914,20 @@ namespace spot
                 pixels.push_back( p.g );
                 pixels.push_back( p.b );
                 pixels.push_back( p.a );
+            }
+            return pixels;
+        }
+
+        std::vector<unsigned char> rgbx( unsigned char x ) const {
+            rect temp = this->to_rgba();
+
+            std::vector<unsigned char> pixels( w * h * 4 ); pixels.resize(0);
+            for( auto &px : temp ) {
+                pixel p = px;
+                pixels.push_back( p.r );
+                pixels.push_back( p.g );
+                pixels.push_back( p.b );
+                pixels.push_back( x );
             }
             return pixels;
         }
@@ -1005,7 +1240,7 @@ namespace spot
         texture() : rect<pixel>()
         {}
 
-        texture( size_t w, size_t h, const pixel &filler = pixel() ) : rect<pixel>(w,h,filler)
+        texture( size_t w, size_t h, size_t d = 0, const pixel &filler = pixel() ) : rect<pixel>(w,h,d,filler)
         {}
 
         texture( const rect<pixel> &rt ) : rect<pixel>(rt)
@@ -1018,7 +1253,33 @@ namespace spot
         texture( const void *ptr, size_t len ) : rect<pixel>() {
             load( ptr, len );
         }
+
+        texture( const stream &st ) : rect<pixel>(st.w,st.h,st.d) {
+            if( st.fmt == RGB_888 ) {
+                uint8_t *rgb = (uint8_t*)st./*block.*/data;
+                for( auto &px : *this ) {
+                    px.r = *rgb++;
+                    px.g = *rgb++;
+                    px.b = *rgb++;
+                    px.a = 255;
+                }
+            }
+            if( st.fmt == RGBA_8888 ) {
+                uint8_t *rgba = (uint8_t*)st./*block.*/data;
+                for( auto &px : *this ) {
+                    px.r = *rgba++;
+                    px.g = *rgba++;
+                    px.b = *rgba++;
+                    px.a = *rgba++;
+                }
+            }
+        }
+
+        texture( const void *ptr, unsigned len, unsigned w, unsigned h, unsigned d = 0, unsigned fmt = RGB_888 ) 
+            : texture( stream { int(w),int(h),int(d),int(fmt),ptr,len,0,0,0 /*mem( ptr,len )*/ } ) {
+        }
     };
+
 
     class image : public rect< color >
     {
@@ -1031,7 +1292,7 @@ namespace spot
         image() : rect<color>()
         {}
 
-        image( size_t w, size_t h, const color &filler = color() ) : rect<color>(w,h,filler)
+        image( size_t w, size_t h, size_t d = 0, const color &filler = color() ) : rect<color>(w,h,d,filler)
         {}
 
         image( const rect<color> &rt ) : rect<color>(rt)
@@ -1050,7 +1311,7 @@ namespace spot
         }
 
         operator texture() const {
-            texture tx( w, h ); tx.resize(0);
+            texture tx( w, h, d ); tx.resize(0);
             for( auto &color : *this ) {
                 spot::pixel pixel = color;
                 tx.push_back( pixel );
@@ -1061,7 +1322,7 @@ namespace spot
         // import/export
 
         bool load( const texture &tx ) {
-            this->resize( (w = tx.w) * (h = tx.h) );
+            this->resize( ( (d = tx.d) > 0 ? tx.d : 1 ) * (w = tx.w) * (h = tx.h) );
             this->resize(0);
             for( auto &pixel : tx ) {
                 spot::color color = pixel;

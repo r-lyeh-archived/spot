@@ -165,16 +165,16 @@ static stbi_uc * stbi__pkm_load(stbi__context *s, int *x, int *y, int *comp, int
 
 	compressedSize = etc1_get_encoded_data_size(width, height);
 
-	pkm_data = (stbi_uc *)malloc(compressedSize);
+	pkm_data = (stbi_uc *)STBI_MALLOC(compressedSize);
 	stbi__getn( s, pkm_data, compressedSize );
 
 	bpr = ((width * 3) + align) & ~align;
 	size = bpr * height;
-	pkm_res_data = (stbi_uc *)malloc(size);
+	pkm_res_data = (stbi_uc *)STBI_MALLOC(size);
 
 	res = etc1_decode_image((const etc1_byte*)pkm_data, (etc1_byte*)pkm_res_data, width, height, 3, bpr);
 
-	free( pkm_data );
+	STBI_FREE( pkm_data );
 
 	if ( 0 == res ) {
 		if( (req_comp <= 4) && (req_comp >= 1) ) {
@@ -187,7 +187,7 @@ static stbi_uc * stbi__pkm_load(stbi__context *s, int *x, int *y, int *comp, int
 
 		return (stbi_uc *)pkm_res_data;
 	} else {
-		free( pkm_res_data );
+		STBI_FREE( pkm_res_data );
 	}
 
 	return NULL;

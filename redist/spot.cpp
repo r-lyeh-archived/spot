@@ -96,6 +96,12 @@
 #include "deps/nanosvg/src/nanosvg.h"
 #include "deps/nanosvg/src/nanosvgrast.h"
 
+/*
+#define STBI_MALLOC(x)    spot_malloc(x)
+#define STBI_FREE(p)      spot_free(p)
+#define STBI_REALLOC(p,x) spot_realloc(p,x)
+*/
+#define STBI_NO_STDIO
 #include "deps/soil2/stb_image.c"
 #include "deps/soil2/stb_image_write.c"
 
@@ -105,6 +111,7 @@
 #define clamp clamp2
 #   include "deps/soil2/etc1_utils.c"
 #   include "deps/soil2/image_helper.c"
+#   include "deps/rg_etc1/rg_etc1.cpp"
 #undef  clamp
 
 #include "deps/jpge/jpge.h"
@@ -124,7 +131,19 @@
 #   include "deps/soil2/SOIL2.c"
 #endif
 
+#include "deps/containers/pkm.hpp"
+#include "deps/containers/pvr3.hpp"
+#include "deps/containers/ktx.hpp"
+
 #include <stdint.h>
+
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string>
 
 extern "C"
 int stbi_write_dds( char const *filename, int w, int h, int comp, const void *data ) {
@@ -140,6 +159,352 @@ uint8_t* WebPDecodeRGBA(const uint8_t* data, size_t data_size, int* width, int* 
 extern "C"
 size_t WebPEncodeRGBA(const unsigned char* rgba, int width, int height, int stride, float quality_factor, unsigned char** output);
 
+
+
+// portable endianness stuff. rlyeh, public domain {
+#include <stdint.h>
+#if __STDC_VERSION__ >= 199901L
+#define IS_BIG_ENDIAN (!*(unsigned char *)&(uint16_t){1})
+#else
+#define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
+#endif
+uint16_t swap16( uint16_t x ) {
+    return ( x << 8 ) | ( x >> 8 );
+}
+uint32_t swap32( uint32_t x ) {
+    return ( x << 24 ) | (( x << 8 ) & 0xff0000) | (( x >> 8 ) & 0xff00) | ( x >> 24 );
+}
+uint16_t tobe16( uint16_t x ) {
+    return IS_BIG_ENDIAN ? x : swap16(x);
+}
+uint32_t tobe32( uint32_t x ) {
+    return IS_BIG_ENDIAN ? x : swap32(x);
+}
+uint16_t tole16( uint16_t x ) {
+    return IS_BIG_ENDIAN ? swap16(x) : x;
+}
+uint32_t tole32( uint32_t x ) {
+    return IS_BIG_ENDIAN ? swap32(x) : x;
+}
+#define  hton16(x) ( IS_BIG_ENDIAN ? (x) : swap16(x) )
+#define  hton32(x) ( IS_BIG_ENDIAN ? (x) : swap32(x) )
+#define  ntoh16(x) ( IS_BIG_ENDIAN ? (x) : swap16(x) )
+#define  ntoh32(x) ( IS_BIG_ENDIAN ? (x) : swap32(x) )
+// }
+
+
+namespace spot {
+
+bool devel = false;
+
+/*
+#define STBI_ASSERT assert
+#define stbi__errpuc(...) 0
+#define stbi__malloc malloc
+#define STBI_FREE free
+#define stbi_uc unsigned char */
+static stbi_uc stbi__compute_y2(int r, int g, int b) {
+   return (stbi_uc) (((r*77) + (g*150) +  (29*b)) >> 8);
+}
+static stbi_uc *stbi__convert_format2(unsigned char *data, int bpp_src, int bpp_dst, unsigned int x, unsigned int y) {
+   int i,j;
+   stbi_uc *good;
+
+   if (bpp_dst == bpp_src) return data;
+   STBI_ASSERT(bpp_dst >= 1 && bpp_dst <= 4);
+
+   good = (stbi_uc *) stbi__malloc(bpp_dst * x * y);
+   if (good == NULL) {
+      STBI_FREE(data);
+      return stbi__errpuc("outofmem", "Out of memory");
+   }
+
+   for (j=0; j < (int) y; ++j) {
+      stbi_uc *src  = data + j * x * bpp_src   ;
+      stbi_uc *dest = good + j * x * bpp_dst;
+
+      #define COMBO(a,b)  ((a)*8+(b))
+      #define CASE(a,b)   case COMBO(a,b): for(i=x-1; i >= 0; --i, src += a, dest += b)
+      // convert source image with bpp_src components to one with bpp_dst components;
+      // avoid switch per pixel, so use switch per scanline and massive macros
+      switch (COMBO(bpp_src, bpp_dst)) {
+         CASE(1,2) dest[0]=src[0], dest[1]=255; break;
+         CASE(1,3) dest[0]=dest[1]=dest[2]=src[0]; break;
+         CASE(1,4) dest[0]=dest[1]=dest[2]=src[0], dest[3]=255; break;
+         CASE(2,1) dest[0]=src[0]; break;
+         CASE(2,3) dest[0]=dest[1]=dest[2]=src[0]; break;
+         CASE(2,4) dest[0]=dest[1]=dest[2]=src[0], dest[3]=src[1]; break;
+         CASE(3,4) dest[0]=src[0],dest[1]=src[1],dest[2]=src[2],dest[3]=255; break;
+         CASE(3,1) dest[0]=stbi__compute_y2(src[0],src[1],src[2]); break;
+         CASE(3,2) dest[0]=stbi__compute_y2(src[0],src[1],src[2]), dest[1] = 255; break;
+         CASE(4,1) dest[0]=stbi__compute_y2(src[0],src[1],src[2]); break;
+         CASE(4,2) dest[0]=stbi__compute_y2(src[0],src[1],src[2]), dest[1] = src[3]; break;
+         CASE(4,3) dest[0]=src[0],dest[1]=src[1],dest[2]=src[2]; break;
+         default: STBI_ASSERT(0);
+      }
+      #undef CASE
+   }
+
+   STBI_FREE(data);
+   return good;
+}
+/*
+    if( (req_comp <= 4) && (req_comp >= 1) ) {
+        //  user has some requirements, meet them
+        if( req_comp != img_n ) {
+            pkm_res_data = stbi__convert_format( pkm_res_data, img_n, req_comp, img_x, img_y );
+        }
+    }
+*/
+
+static stbi_uc *decode_etc1_stream(const void *stream, int len, int width, int height, int req_comp, unsigned int *zlen)
+{
+    int img_x = width, img_y = height, img_n = 3;
+
+    unsigned int align = 0;
+    unsigned int stride = ((width * 3) + align) & ~align;
+    unsigned int size = stride * height;
+
+    stbi_uc *unpacked = (stbi_uc *)malloc(size);
+    if( unpacked ) {
+        // pixelSize 2 is an GL_UNSIGNED_SHORT_5_6_5 image, 3 is a GL_BYTE RGB image.
+        if( 0 == etc1_decode_image((const etc1_byte*)stream, (etc1_byte*)unpacked, width, height, 3, stride) ) {
+            if( zlen ) *zlen = size;
+            return (stbi_uc *)unpacked;            
+        }
+        free( unpacked );
+    }
+
+    return NULL;
+}
+
+bool stream::is_valid() const {
+    return w && h; // && data && len
+}
+
+bool stream::is_etc1() const {
+    return is_valid() && 0 == w % 4 && 0 == h % 4 && fmt == pvr3::table1::ETC1;
+}
+
+bool stream::is_compressed() const {
+    return is_valid() && w * h * ( d >= 1 ? d : 1 ) * comp / 4 < len;
+}
+
+template<typename T>
+void endianness( T &self ) {
+}
+template<>
+void endianness( pkm::header &hd ) {
+    hd.width = ntoh16(hd.width);
+    hd.height = ntoh16(hd.height);
+    hd.width_src = ntoh16(hd.width_src);
+    hd.height_src = ntoh16(hd.height_src);
+ }
+
+template<typename T>
+bool preload( T &self, const void *ptr, size_t len ) {
+    if( sizeof( typename T::header ) < len ) {
+        memcpy( &self.hd, ptr, sizeof( typename T::header ) );
+        endianness( self.hd );
+        return self.is_currently_supported();
+    }
+    memset( &self, 0, sizeof( typename T::header ) );
+    return false;
+}
+
+/*
+bool load( std::string &data, const std::string &name, uint32_t reserved = 0 ) {
+    std::stringstream ss;
+    std::ifstream ifs( name.c_str(), std::ios::binary );
+    if( ifs.good() && ss << ifs.rdbuf() ) {
+        return data = std::string( reserved, 0 ) + ss.str(), true;
+    }
+    return data = std::string( reserved, 0 ), false;
+}
+*/
+
+stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
+
+    stream out; out.fmt = pvr3::table1::RGBG8888;
+
+    /* Check for power of 2 {
+    auto is_power_of_two = []( unsigned x ) {
+        return ((x & (x - 1)) == 0);
+    };
+    if( !is_power_of_two(w) ) return out;
+    if( !is_power_of_two(h) ) return out;
+    // } */
+
+    // Alloc mem
+    unsigned pitch = w * (bpp / 8); 
+    unsigned blockw = w/4;
+    unsigned blockh = h/4;
+    size_t len = blockw * blockh * 8;
+    uint8_t *dst = new uint8_t [ reserved + len ];
+    if( !dst ) return out;
+    uint8_t *data = &dst[ reserved ];
+
+    // init
+    rg_etc1::pack_etc1_block_init();
+    rg_etc1::etc1_pack_params params;
+
+    int step = 100/6;
+    /**/ if( quality >= 100 - step * 1 ) params.m_quality = rg_etc1::cHighQuality,   params.m_dithering = true;
+    else if( quality >= 100 - step * 2 ) params.m_quality = rg_etc1::cHighQuality,   params.m_dithering = false;
+    else if( quality >= 100 - step * 3 ) params.m_quality = rg_etc1::cMediumQuality, params.m_dithering = true;
+    else if( quality >= 100 - step * 4 ) params.m_quality = rg_etc1::cMediumQuality, params.m_dithering = false;
+    else if( quality >= 100 - step * 5 ) params.m_quality = rg_etc1::cLowQuality,    params.m_dithering = true;
+    else                                 params.m_quality = rg_etc1::cLowQuality,    params.m_dithering = false;
+
+    // RGBA to ETC1
+#pragma omp parallel for 
+    for( unsigned y = 0; y < blockh; y++ ) {
+        for( unsigned x = 0; x < blockw; x++ ) {
+            uint32_t block[16];
+            for( unsigned iy = 0; iy < 4; iy++ ) {
+                memcpy(block + 4 * iy, (uint8_t*)rgba + ((y * 4 + iy) * (pitch/4) + x * 4) * 4, 16);
+            }
+            rg_etc1::pack_etc1_block((data) + (blockw * y + x) * 8, block, params);
+        }
+    }
+
+    out.w = blockw*4;
+    out.h = blockh*4;
+    out.d = 1;
+    out.fmt = pvr3::table1::ETC1;
+    out.data = dst;
+    out.len = len;
+    return out;
+}
+
+bool save_pkm_etc1( std::string &out, const stream &sm, unsigned reserved ) {
+    if( sm.is_valid() && sm.is_etc1() ) {
+        pkm p;
+        p.hd.id = hton32('PKM ');
+        p.hd.version = hton16('10');
+        p.hd.type = hton16(0);
+        p.hd.width = hton16(sm.w - sm.w % 4);
+        p.hd.height = hton16(sm.h - sm.h % 4);
+        p.hd.width_src = hton16(sm.w);
+        p.hd.height_src = hton16(sm.h);
+        if( devel ) p.debug(std::cout);
+
+        out.resize( sizeof(p.hd) + reserved );
+        memcpy( &out[0], &p.hd, sizeof(p.hd) );
+        return true;
+    }
+    return out.clear(), false;
+}
+
+bool save_pvr_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) {
+    if( sm.is_valid() && sm.is_etc1() ) {
+        pvr3 pvr;
+        pvr.hd.version = tole32(0x03525650);     // 0x03525650, if endianess does not match ; 0x50565203, if endianess does match
+        pvr.hd.flags = tole32(0);                // 0x02, colour values within the texture have been pre-multiplied by the alpha values
+        pvr.hd.pixel_format_1 = tole32(sm.fmt);  // see table1 above
+        pvr.hd.pixel_format_2 = tole32(0);       // 0
+        pvr.hd.color_space = tole32(0);          // 0 linear rgb, 1 standard rgb 
+        pvr.hd.channel_type = tole32(0);         // see table2 above
+        pvr.hd.height = tole32(sm.h);            // 1d texture
+        pvr.hd.width = tole32(sm.w);             // 2d texture; >= 1
+        pvr.hd.depth = tole32(1);                // 3d texture; >= 1
+        pvr.hd.num_surfaces = tole32(1);         // num surfaces in texture array; >= 1
+        pvr.hd.num_faces = tole32(1);            // num faces in cubemap; >= 1
+        pvr.hd.num_mipmaps = tole32(1);          // num levels of mipmaps; >= 1
+        pvr.hd.metadata_size = tole32(0);        // length of following header
+        if( devel ) pvr.debug(std::cout);
+
+        out.resize( sizeof(pvr3::header) + reserved );
+        memcpy( &out[0], &pvr.hd, sizeof(pvr.hd) );
+        return true;
+    }
+    return out.clear(), false;
+}
+
+bool save_ktx_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) {
+    if( sm.is_valid() && sm.is_etc1() ) {
+        ktx k;
+        k.hd.identifier0 = tole32(0x58544bab); 
+        k.hd.identifier1 = tole32(0xbb313120); 
+        k.hd.identifier2 = tole32(0xa1a0a0d);  
+        k.hd.endianness = tole32(0x4030201);
+        k.hd.glType = tole32(0x0); // table 8.2 of opengl 4.4 spec; UNSIGNED_BYTE, UNSIGNED_SHORT_5_6_5, etc.)
+        k.hd.glTypeSize = tole32(0x1); // 1 for compressed data
+        k.hd.glFormat = tole32(0x0); // table 8.3 of opengl 4.4 spec; RGB, RGBA, BGRA...
+        k.hd.glInternalFormat = tole32(0x8d64); // table 8.14 of opengl 4.4 spec; ETC1_RGB8_OES (0x8D64)
+        k.hd.glBaseInternalFormat = tole32(0x1907); // table 8.11 of opengl 4.4 spec; GL_RGB (0x1907), RGBA, ALPHA...
+        k.hd.pixelWidth = tole32(sm.w);
+        k.hd.pixelHeight = tole32(sm.h);
+        k.hd.pixelDepth = tole32(0);
+        k.hd.numberOfArrayElements = tole32(0);
+        k.hd.numberOfFaces = tole32(1);
+        k.hd.numberOfMipmapLevels = tole32(1);
+        k.hd.bytesOfKeyValueData = tole32(0);
+        if( devel ) k.debug(std::cout);
+
+        out.resize( sizeof(ktx::header) + reserved );
+        memcpy( &out[0], &k.hd, sizeof(ktx::header) );
+        return true;
+    }
+    return out.clear(), false;
+}
+
+std::string save_pvr_etc1( const stream &sm, unsigned reserved = 0 ) {
+    std::string out;
+    return save_pvr_etc1( out, sm, reserved ) ? out : std::string();
+}
+std::string save_ktx_etc1( const stream &sm, unsigned reserved = 0 ) {
+    std::string out;
+    return save_ktx_etc1( out, sm, reserved ) ? out : std::string();
+}
+std::string save_pkm_etc1( const stream &sm, unsigned reserved = 0 ) {
+    std::string out;
+    return save_pkm_etc1( out, sm, reserved ) ? out : std::string();
+}
+
+}
+
+/*
+@todo:
+.pvr3
+    for each MIP-Map Level in MIP-Map Count {
+        for each Surface in Num. Surfaces {
+            for each Face in Num. Faces {
+                for each Slice in Depth {
+                    for each Row in Height {
+                        for each Pixel in Width {
+                            Byte data[Size_Based_On_PixelFormat]
+    }}}}}
+
+.ktx
+    [header]
+    
+    for each keyValuePair that fits in bytesOfKeyValueData
+        uint32_t   keyAndValueByteSize
+        uint8_t    keyAndValue[keyAndValueByteSize]
+        uint8_t    valuePadding[3 - ((keyAndValueByteSize + 3) % 4)]
+    end
+
+    for each mipmap_level in numberOfMipmapLevels* {
+        uint32_t imageSize; 
+        for each array_element in numberOfArrayElements* {
+           for each face in numberOfFaces {
+               for each z_slice in pixelDepth* {
+                   for each row or row_of_blocks in pixelHeight* {
+                       for each pixel or block_of_pixels in pixelWidth {
+                           uint8_t data[format-specific-number-of-bytes]**
+                       }
+                   }
+               }
+               uint8_t cubePadding[0-3]
+           }
+        }
+        uint8_t mipPadding[3 - ((imageSize + 3) % 4)]
+    } 
+
+    * Replace with 1 if this field is 0.
+    ** Uncompressed texture data matches a GL_UNPACK_ALIGNMENT of 4.
+*/
 
 
 namespace spot
@@ -243,6 +608,76 @@ namespace spot
             return std::string();
         }        
 
+        std::string encode_ktx( unsigned w, unsigned h, const void *data, unsigned quality ) {
+            if( w && h && data && quality ) {
+                stream sm = encode_as_etc1( data, w, h, 32, quality );
+                std::stringstream ss;
+                ss << save_ktx_etc1(sm);
+                uint32_t len32( sm.len );
+                ss.write( (const char *)&len32, 4 );
+                ss.write( (const char *)sm.data, sm.len );
+                delete [] (void *)sm.data;
+                return ss.str();
+            }
+            return std::string();
+        }        
+
+        std::string encode_pvr( unsigned w, unsigned h, const void *data, unsigned quality ) {
+            if( w && h && data && quality ) {
+                stream sm = encode_as_etc1( data, w, h, 32, quality );
+                std::stringstream ss;
+                ss << save_pvr_etc1(sm);
+                ss.write( (const char *)sm.data, sm.len );
+                delete [] (void *)sm.data;
+                return ss.str();
+            }
+            return std::string();
+        }        
+
+        std::string encode_pkm( unsigned w, unsigned h, const void *data, unsigned quality ) {
+            if( w && h && data && quality ) {
+                stream sm = encode_as_etc1( data, w, h, 32, quality );
+                std::stringstream ss;
+                ss << save_pkm_etc1(sm);
+                ss.write( (const char *)sm.data, sm.len );
+                delete [] (void *)sm.data;
+                return ss.str();
+            }
+            return std::string();
+        }        
+
+        /*
+            std::cout << "fast: " << bench([&]{ encode_as_etc1( img.rgba32().data(), img.w, img.h, 32, SPOT_ETC1_LOW );} ) << std::endl;
+            std::cout << "medium: " << bench([&]{ encode_as_etc1( img.rgba32().data(), img.w, img.h, 32, SPOT_ETC1_MEDIUM );} ) << std::endl;
+            //std::cout << "high: " << bench([&]{ encode_as_etc1( img.rgba32().data(), img.w, img.h, 32, SPOT_ETC1_HIGH );} ) << std::endl;
+
+            if( k.is_currently_supported() ) {
+                auto header = save_pkm_etc1( stream { k.hd.pixelWidth, k.hd.pixelHeight, pvr3::table1::ETC1 } );
+                buffer = buffer + sizeof(k.hd) + 4 - header.size();
+                uint32_t len = tole32( uint32_t( header.size() ) );
+                memcpy( &data[buffer - 4], &len, 4 );
+                memcpy( &data[buffer], &header[0], header.size() );
+
+                preload(pk, &data[buffer], data.size() - buffer );
+                pk.debug( std::cout );
+            }
+            if( p.is_currently_supported() ) {
+                auto header = save_pkm_etc1( stream { p.hd.width, p.hd.height, pvr3::table1::ETC1 } );
+                buffer = buffer + sizeof(p.hd) - header.size();
+                memcpy( &data[buffer], &header[0], header.size() );
+
+                preload(pk, &data[buffer], data.size() - buffer );
+                pk.debug( std::cout );
+            }
+            if( pk.is_currently_supported() ) {
+                const stbi_uc *rgba = decode_etc1_stream( &data[buffer+sizeof(pkm::header)], data.size(), pk.hd.width, pk.hd.height, 3, &zlen);
+                spot::texture tx( rgba, zlen, pk.hd.width, pk.hd.height );
+                spot::image img = tx;
+                display( img );
+            }
+        }        
+        */
+
         bool writefile( const std::string &filename, const std::string &data ) {
             if( !data.empty() ) {
                 std::ofstream ofs( filename.c_str(), std::ios::binary );
@@ -262,7 +697,7 @@ namespace spot
         return list;
     }
     std::vector<std::string> list_supported_outputs() {
-        const char *str[] = { "bmp", "dds", "jpg", "png", "tga", "webp", "pug", 0 };
+        const char *str[] = { "bmp", "dds", "jpg", "png", "tga", "webp", "pug", "ktx", "pvr", "pkm", 0 };
         std::vector<std::string> list;
         for( int i = 0; str[i]; ++i ) {
             list.push_back( str[i] );
@@ -270,78 +705,235 @@ namespace spot
         return list;
     }
 
-    std::vector<unsigned char> decode8( const void *ptr, size_t size, size_t *w, size_t *h, std::string *error, bool make_squared, bool mirror_w, bool mirror_h ) {
-        std::vector<unsigned char> temp;
+    enum { NO_DELETER, STBI_DELETER, FREE_DELETER, NEW_DELETER, NEW_ARRAY_DELETER };
+    enum { UNK, IS_STBI, IS_CRN, IS_WEBP, IS_SVG, IS_KTX, IS_PVR3, IS_PKM };
 
-        if( !ptr ) {
-            if( error ) *error = "Error: invalid pointer provided";
-            return std::vector<unsigned char>();
+    stream info( const void *src, size_t len ) {
+        stream sm = {};
+        sm.data = src;
+        sm.len = len;
+
+        const char *src8 = (const char *)src;
+
+        // crn?
+        bool is_crn = len > 2 && (src8[0] == 'H' && src8[1] == 'x');
+        if( is_crn ) {
+            sm.w = (( src8[0xC] << 8) | src8[0xD] );
+            sm.h = (( src8[0xE] << 8) | src8[0xF] );
+            sm.comp = 4; 
+            sm.hint = IS_CRN;
+            sm.deleter = STBI_DELETER;
+            return sm;
+        }
+
+        // pkm? (etc1)
+        {
+            pkm f;
+            preload( f, src, len );
+            if( devel ) f.debug( std::cout );
+            if( f.is_currently_supported() ) {
+                sm.w = int(f.hd.width);
+                sm.h = int(f.hd.height);
+                sm.comp = 3;
+                sm.hint = IS_PKM;
+                return sm;
+            }
+        }
+
+        // ktx? (etc1)
+        {
+            ktx f;
+            preload( f, src, len );
+            if( devel ) f.debug( std::cout );
+            if( f.is_currently_supported() ) {
+                sm.w = int(f.hd.pixelWidth);
+                sm.h = int(f.hd.pixelHeight);
+                sm.comp = 3;
+                sm.hint = IS_KTX;
+                return sm;
+            }
+        }
+
+        // pvr3? (etc1)
+        {
+            pvr3 f;
+            preload( f, src, len );
+            if( devel ) f.debug( std::cout );
+            if( f.is_currently_supported() ) {
+                sm.w = int(f.hd.width);
+                sm.h = int(f.hd.height);
+                sm.comp = 3;
+                sm.hint = IS_PVR3;
+                return sm;
+            }
+        }
+
+        // pvr2 ?
+        int iscompressed = false;
+        int ok = stbi__pvr_info_from_memory( (stbi_uc const *)src, int(len), &sm.w, &sm.h, &sm.comp, &iscompressed );
+        if( ok ) {
+            return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, sm;
+        }
+
+        // dds ?
+        ok = stbi__dds_info_from_memory( (stbi_uc const *)src, int(len), &sm.w, &sm.h, &sm.comp, &iscompressed );
+        if( ok ) {
+            return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, sm;
+        }
+
+        // try most
+        ok = stbi_info_from_memory( (stbi_uc const *)src, int(len), &sm.w, &sm.h, &sm.comp );
+        if( ok ) {
+            // pug?
+            const char *magic = (const char *)src + len - 4;
+            if( magic[0] == 'p' && magic[1] == 'u' && magic[2] == 'g' && magic[3] == '1' ) sm.comp = 4;
+
+            return sm.hint = IS_STBI, sm.deleter = STBI_DELETER, sm;
+        }
+
+        // webp ?
+        ok = 0 != WebPGetInfo( (const uint8_t *)src, len, &sm.w, &sm.h );
+        if( ok ) return sm.hint = IS_WEBP, sm.deleter = FREE_DELETER, sm.comp = 4, sm;
+
+        // svg ?
+        if( src8[0] == '<' || src8[0] == ' ' || src8[0] == '\t' ) {
+            // Load SVG, parse and rasterize
+            char *str = new char[ len + 1 ];
+            memcpy( str, src, len );
+            str[ len ] = '\0';
+
+            NSVGimage *image = nsvgParse( str, "px" /*units*/, 96.f /* dpi */ );
+            if( image ) {
+                double scale = 1.0;
+                sm.hint = IS_SVG;
+                sm.w = int(image->width * scale);
+                sm.h = int(image->height * scale);
+                sm.comp = 4;
+
+                nsvgDelete(image);
+                delete [] str;
+                return sm.deleter = FREE_DELETER, sm;
+            } else {
+                delete [] str;
+            }
+        }
+
+        return stream {};
+    }
+
+    bool info( const void *src, size_t len, int &w, int &h, int &comp, int &hint, int &deleter ) {
+        stream sm = info( src, len );
+        if( !sm.is_valid() ) {
+            return false;
+        }
+        w = sm.w;
+        h = sm.h;
+        comp = sm.comp;
+        hint = sm.hint;
+        deleter = sm.deleter;
+        return true;
+    }
+
+    bool decode( stream &dst, const stream &src )
+    {
+        if( !src.data || !dst.data ) {
+            dst.error = "Error: invalid pointer provided";
+            return false;
         }
             
-        if( !size ) {
-            if( error ) *error = "Error: invalid size provided";
-            return std::vector<unsigned char>();
+        if( !src.len || !dst.len ) {
+            dst.error = "Error: invalid size provided";
+            return false;
         }
 
         // decode
-        int imageWidth = 0, imageHeight = 0, imageBpp = 0;
-        enum { STBI_DELETER, FREE_DELETER, NEW_DELETER, NEW_ARRAY_DELETER, NO_DELETER } deleter = NO_DELETER;
+        int imageWidth = 0, imageHeight = 0, imageComp = 0, imageHint = 0;
+        int deleter = NO_DELETER;
+
+        if( !src.hint ) {
+            if( !info(src.data, src.len, imageWidth, imageHeight, imageComp, imageHint, deleter ) ) {
+                return false;
+            }
+        } 
+
+        imageWidth = src.w;
+        imageHeight = src.h;
+        imageComp = src.comp;
+        imageHint = src.hint;
+
         stbi_uc *imageuc = 0;
 
-        if( !imageuc )
-        {
-            imageuc = stbi_load_from_memory( (const unsigned char *)ptr, size, &imageWidth, &imageHeight, &imageBpp, 4 );
+        switch( imageHint ) {
+        default:
+        break; 
+        case IS_CRN :{
+            std::string dds;
+            if( crn2dds( dds, src.data, src.len ) ) {
+                imageuc = stbi_load_from_memory( (const unsigned char *)&dds[0], dds.size(), &imageWidth, &imageHeight, &imageComp, 4 );
+                deleter = STBI_DELETER;
+                imageComp = 4;
+            }
+        }
+        break; 
+        case IS_KTX :{
+            unsigned int zlen;
+            const stbi_uc *data = (const stbi_uc *)src.data;
+            imageuc = decode_etc1_stream( &data[sizeof(ktx::header) + 4], src.len - sizeof(ktx::header) - 4, imageWidth, imageHeight, 3, &zlen);
+            deleter = FREE_DELETER;
+            imageComp = 3;
+        }
+        break; 
+        case IS_PVR3: {
+            unsigned int zlen;
+            const stbi_uc *data = (const stbi_uc *)src.data;
+            imageuc = decode_etc1_stream( &data[sizeof(pvr3::header) + 0], src.len - sizeof(pvr3::header) - 0, imageWidth, imageHeight, 3, &zlen);
+            deleter = FREE_DELETER;
+            imageComp = 3;
+        }
+        break; 
+        case IS_PKM :{
+            unsigned int zlen;
+            const stbi_uc *data = (const stbi_uc *)src.data;
+            imageuc = decode_etc1_stream( &data[sizeof(pkm::header) + 0], src.len - sizeof(pkm::header) - 0, imageWidth, imageHeight, 3, &zlen);
+            deleter = FREE_DELETER;
+            imageComp = 3;
+        }
+        break; 
+        case IS_STBI: {
+            imageuc = stbi_load_from_memory( (const unsigned char *)src.data, src.len, &imageWidth, &imageHeight, &imageComp, imageComp );
             deleter = STBI_DELETER;
-
-            if( !imageuc ) {
-                // is it crn?
-                bool is_crn = size > 2 && ((const char *)ptr)[0] == 'H' && ((const char *)ptr)[1] == 'x';
-                if( is_crn ) {
-                    std::string dds;
-                    if( crn2dds( dds, ptr, size ) ) {
-                        imageuc = stbi_load_from_memory( (const unsigned char *)&dds[0], dds.size(), &imageWidth, &imageHeight, &imageBpp, 4 );
-                    }                
-                }
-            }
-
-            if( imageuc ) {
-                // decode alpha if it is a .pug file
-                const char *magic = (const char *)ptr + size - 4;
-                if( magic[0] == 'p' && magic[1] == 'u' && magic[2] == 'g' && magic[3] == '1' ) {
-                    const int32_t color_size = internals::swapbe( *(const int32_t *)((const char *)ptr + size - 12) );
-                    const int32_t alpha_size = internals::swapbe( *(const int32_t *)((const char *)ptr + size - 8) );
-                    int w2 = 0, h2 = 0, bpp2 = 0;
-                    stbi_uc *alpha = stbi_load_from_memory( (const unsigned char *)ptr + color_size, alpha_size, &w2, &h2, &bpp2, 1 );
-                    if( alpha ) {
-                        stbi_uc *src = &alpha[ 0 ], *end = &alpha[ w2*h2 ], *dst = &imageuc[ 3 ];
-                        while( src < end ) {
-                            *dst = *src++;
-                            dst += 4;
-                        }
-                        stbi_image_free( alpha );                        
+            // if it is a .pug file, then decode alpha 
+            const char *magic = (const char *)src.data + src.len - 4;
+            if( magic[0] == 'p' && magic[1] == 'u' && magic[2] == 'g' && magic[3] == '1' ) {
+                imageComp = 4;
+                const int32_t color_size = internals::swapbe( *(const int32_t *)((const char *)src.data + src.len - 12) );
+                const int32_t alpha_size = internals::swapbe( *(const int32_t *)((const char *)src.data + src.len - 8) );
+                int w2 = 0, h2 = 0, bpp2 = 0;
+                stbi_uc *alpha = stbi_load_from_memory( (const unsigned char *)src.data + color_size, alpha_size, &w2, &h2, &bpp2, 1 );
+                if( alpha ) {
+                    stbi_uc *data8 = &alpha[ 0 ], *end8 = &alpha[ w2*h2 ], *dst8 = &imageuc[ 3 ];
+                    while( data8 < end8 ) {
+                        *dst8 = *data8++;
+                        dst8 += 4;
                     }
-                }                
-            }
+                    stbi_image_free( alpha );
+                }
+            }  
         }
-
-        if( !imageuc )
-        {
-            bool ok = 0 != WebPGetInfo( (const uint8_t *)ptr, size, &imageWidth, &imageHeight );
-            if( ok ) {
-                imageuc = (stbi_uc *) WebPDecodeRGBA( (const uint8_t *)ptr, size, &imageWidth, &imageHeight );
-                deleter = FREE_DELETER;
-                imageBpp = 4;
-            }
+        break; 
+        case IS_WEBP: {
+            imageuc = (stbi_uc *) WebPDecodeRGBA( (const uint8_t *)src.data, src.len, &imageWidth, &imageHeight );
+            deleter = FREE_DELETER;
+            imageComp = 4;
         }
-
-        if( !imageuc )
-        {
+        break; 
+        case IS_SVG :{
             // Load SVG, parse and rasterize
-            char *str = new char[ size + 1 ];
-            memcpy( str, ptr, size );
-            str[size] = '\0';
+            char *str = new char[ src.len + 1 ];
+            memcpy( str, src.data, src.len );
+            str[ src.len ] = '\0';
 
-            NSVGimage *image = (str[0] == '<' || str[0] == ' ' || str[0] == '\t' ? nsvgParse( str, "px" /*units*/, 96.f /* dpi */ ) : (NSVGimage *)0 );
+            NSVGimage *image = nsvgParse( str, "px" /*units*/, 96.f /* dpi */ );
             if( image ) {
                 // Create rasterizer (can be used to render multiple images).
                 static struct install {
@@ -353,12 +945,7 @@ namespace spot
                 int w = image->width;
                 int h = image->height;
 
-                double scale = 1.0;
-                imageWidth = image->width * scale;
-                imageHeight = image->height * scale;
-                imageBpp = 4;
-
-                imageuc = (stbi_uc *)malloc(w*h*4);
+                imageuc = (stbi_uc *)malloc(w*h*4); //imageWidth*imageHeight*4
                 deleter = FREE_DELETER;
                 if( imageuc ) {
                     // Rasterizes SVG image, returns RGBA image (non-premultiplied alpha)
@@ -370,6 +957,7 @@ namespace spot
                     //   w - width of the image to render
                     //   h - height of the image to render
                     //   stride - number of bytes per scaleline in the destination buffer
+                    double scale = 1.0;
                     nsvgRasterize( local.rasterizer, image, 0,0,scale, imageuc, w, h, w*scale*4 );
                 }
                 nsvgDelete(image);
@@ -377,52 +965,17 @@ namespace spot
 
             delete [] str;
         }
+        };
 
         if( !imageuc )
         {
             // assert( false );
             // return yellow/black texture instead?
-            if( error ) *error = "Error! unable to decode image";
-            return std::vector<unsigned char>();
+            dst.error = "Error! unable to decode image";
+            return false;
         }
 
-        if( make_squared )
-        {
-            bool is_power_of_two_w = imageWidth && !(imageWidth & (imageWidth - 1));
-            bool is_power_of_two_h = imageHeight && !(imageHeight & (imageHeight - 1));
-
-            if( is_power_of_two_w && is_power_of_two_h )
-            {
-                temp.resize( imageWidth * imageHeight * 4 );
-                memcpy( &temp[0], imageuc, imageWidth * imageHeight * 4 );
-            }
-            else
-            {
-                int nw = 1, nh = 1, atx, aty;
-                while( nw < imageWidth ) nw <<= 1;
-                while( nh < imageHeight ) nh <<= 1;
-
-                // squared as well, cos we want them pixel perfect
-                if( nh > nw ) nw = nh; else nh = nw;
-
-                temp.resize( nw * nh * 4, 0 );
-                atx = (nw - imageWidth) / 2;
-                aty = (nh - imageHeight) / 2;
-
-                //std::cout << wire::string( "\1x\2 -> \3x\4 @(\5,\6)\n", imageWidth, imageHeight, nw, nh, atx, aty);
-
-                for( int y = 0; y < imageHeight; ++y )
-                    memcpy( &((stbi_uc*)&temp[0])[ ((atx)+(aty+y)*nw)*4 ], &imageuc[ (y*imageWidth) * 4 ], imageWidth * 4 );
-
-                imageWidth = nw;
-                imageHeight = nh;
-            }
-        }
-        else
-        {
-                temp.resize( imageWidth * imageHeight * 4 );
-                memcpy( &temp[0], imageuc, imageWidth * imageHeight * 4 );
-        }
+        memcpy( (void *)dst.data, imageuc, imageWidth * imageHeight * imageComp ); //dst.len );
 
         /****/ if( deleter == STBI_DELETER ) {
             stbi_image_free( imageuc );
@@ -435,67 +988,55 @@ namespace spot
         }
         imageuc = 0;
 
-        if( mirror_w && !mirror_h )
-        {
-            std::vector<stbi_uc> mirrored( temp.size() );
+        dst.w = imageWidth;
+        dst.h = imageHeight;
+        dst.d = 1;
+        dst.comp = imageComp;
+        dst.fmt = RGBA_8888;
 
-            for( int c = 0, y = 0; y < imageHeight; ++y )
-            for( int x = imageWidth - 1; x >= 0; --x )
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 0 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 1 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 2 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 3 ];
-
-            temp = mirrored;
-        }
-        else
-        if( mirror_h && !mirror_w )
-        {
-            std::vector<stbi_uc> mirrored( temp.size() );
-
-            for( int c = 0, y = imageHeight - 1; y >= 0; --y )
-            for( int x = 0; x < imageWidth; ++x )
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 0 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 1 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 2 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 3 ];
-
-            temp = mirrored;
-        }
-        else
-        if( mirror_w && mirror_h )
-        {
-            std::vector<stbi_uc> mirrored( temp.size() );
-
-            for( int c = 0, y = imageHeight - 1; y >= 0; --y )
-            for( int x = imageWidth - 1; x >= 0; --x )
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 0 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 1 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 2 ],
-                mirrored[ c++ ] = temp[ ( x + y * imageWidth ) * 4 + 3 ];
-
-            temp = mirrored;
-
-            std::swap( imageWidth, imageHeight );
-        }
-
-        if( w ) *w = imageWidth;
-        if( h ) *h = imageHeight;
-
-        return temp;
+        return true;
     }
 
-    std::vector<unsigned char> decode8( const std::string &filename, size_t *w, size_t *h, std::string *error, bool make_squared, bool mirror_w, bool mirror_h ) {
+    std::vector<unsigned char> decode8( const void *src, size_t size, size_t *w, size_t *h, size_t *comp, std::string *error ) {
+        const stream in = info( src, size );
+        stream out = {};
+        if( in.is_valid() ) {
+            std::vector<unsigned char> dst( in.w * in.h * 4 /*srccomp*/ );
+            out.data = &dst[0];
+            out.len = int(dst.size());
+            out.fmt = RGBA_8888;
+            if( decode( out, in ) ) {
+                if( w     ) *w = size_t(out.w);
+                if( h     ) *h = size_t(out.h);
+                if( comp  ) *comp = size_t(out.comp);
+                if( error ) *error = out.error;
+                return dst;
+            } 
+        }
+        return std::vector<unsigned char>();
+    }
+
+    std::vector<unsigned char> decode8( const std::string &filename, size_t *w, size_t *h, size_t *comp, std::string *error ) {
         std::ifstream ifs( filename.c_str(), std::ios::binary );
         std::vector<char> buffer( (std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-        return decode8( (const unsigned char *)buffer.data(), buffer.size(), w, h, error, make_squared, mirror_w, mirror_h );
+        return decode8( (const unsigned char *)buffer.data(), buffer.size(), w, h, comp, error );
     }
 
-    std::vector<unsigned int> decode32( const void *ptr, size_t size, size_t *w, size_t *h, std::string *error, bool make_squared, bool mirror_w, bool mirror_h ) {
-        std::vector<unsigned char> decoded = decode8( ptr, size, w, h, error, make_squared, mirror_w, mirror_h ); 
+    std::vector<unsigned int> decode32( const void *ptr, size_t size, size_t *w, size_t *h, size_t *comp, std::string *error ) {
+        std::vector<unsigned char> decoded = decode8( ptr, size, w, h, comp, error ); 
         std::vector<unsigned int> out;
         if( !decoded.empty() ) {
             out.reserve( decoded.size() / 4 );
+            if( comp && *comp == 3 )
+            for( unsigned char *data8 = &decoded[0], *end8 = data8 + decoded.size(); data8 != end8; ) {
+                pixel p;
+                p.r = *data8++;
+                p.g = *data8++;
+                p.b = *data8++;
+                p.a = 255;
+                out.push_back( p.rgba );
+            }
+            if( comp && *comp == 4 )
             for( unsigned char *data8 = &decoded[0], *end8 = data8 + decoded.size(); data8 != end8; ) {
                 pixel p;
                 p.r = *data8++;
@@ -509,10 +1050,10 @@ namespace spot
         return out;
     }
 
-    std::vector<unsigned int> decode32( const std::string &filename, size_t *w, size_t *h, std::string *error, bool make_squared, bool mirror_w, bool mirror_h ) {
+    std::vector<unsigned int> decode32( const std::string &filename, size_t *w, size_t *h, size_t *comp, std::string *error ) {
         std::ifstream ifs( filename.c_str(), std::ios::binary );
         std::vector<char> buffer( (std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-        return decode32( (const unsigned char *)buffer.data(), buffer.size(), w, h, error, make_squared, mirror_w, mirror_h );
+        return decode32( (const unsigned char *)buffer.data(), buffer.size(), w, h, comp, error );
     }
 
     void hsl2rgb( const float *hsl, float *rgb )

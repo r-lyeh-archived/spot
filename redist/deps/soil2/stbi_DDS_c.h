@@ -308,7 +308,7 @@ void stbi_decode_DXT_color_block(
 }
 
 static int stbi__dds_info( stbi__context *s, int *x, int *y, int *comp, int *iscompressed ) {
-	int flags,is_compressed,has_alpha;
+	int flags,is_compressed,has_alpha,cubemap_faces;
 	DDS_header header={0};
 
 	if( sizeof( DDS_header ) != 128 )
@@ -347,9 +347,14 @@ static int stbi__dds_info( stbi__context *s, int *x, int *y, int *comp, int *isc
 
 	is_compressed = (header.sPixelFormat.dwFlags & DDPF_FOURCC) / DDPF_FOURCC;
 	has_alpha = (header.sPixelFormat.dwFlags & DDPF_ALPHAPIXELS) / DDPF_ALPHAPIXELS;
+	cubemap_faces = (header.sCaps.dwCaps2 & DDSCAPS2_CUBEMAP) / DDSCAPS2_CUBEMAP;
+	/*	I need cubemaps to have square faces	*/
+	cubemap_faces &= (header.dwWidth == header.dwHeight);
+	cubemap_faces *= 5;
+	cubemap_faces += 1;
 
 	*x = header.dwWidth;
-	*y = header.dwHeight;
+	*y = header.dwHeight * cubemap_faces;
 
 	if ( !is_compressed ) {
 		*comp = 3;
@@ -464,7 +469,7 @@ static stbi_uc * stbi__dds_load(stbi__context *s, int *x, int *y, int *comp, int
 			dwPitchOrLinearSize == 0	*/
 		//	passed all the tests, get the RAM for decoding
 		sz = (s->img_x)*(s->img_y)*4*cubemap_faces;
-		dds_data = (unsigned char*)malloc( sz );
+		dds_data = (unsigned char*)STBI_MALLOC( sz );
 		/*	do this once for each face	*/
 		for( cf = 0; cf < cubemap_faces; ++ cf )
 		{

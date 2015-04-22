@@ -396,6 +396,17 @@ static stbi_uc *stbi__hdr_to_ldr(float   *data, int x, int y, int comp);
 
 static unsigned char *stbi_load_main(stbi__context *s, int *x, int *y, int *comp, int req_comp)
 {
+   /* textures first, as they need to be done (often) quickly */
+   #ifndef STBI_NO_DDS
+   if (stbi__dds_test(s))  return stbi__dds_load(s,x,y,comp,req_comp);
+   #endif
+   #ifndef STBI_NO_PVR
+   if (stbi__pvr_test(s))  return stbi__pvr_load(s,x,y,comp,req_comp);
+   #endif
+   #ifndef STBI_NO_PKM
+   if (stbi__pkm_test(s))  return stbi__pkm_load(s,x,y,comp,req_comp);
+   #endif
+   /* common image formats first */
    #ifndef STBI_NO_JPEG
    if (stbi__jpeg_test(s)) return stbi__jpeg_load(s,x,y,comp,req_comp);
    #endif
@@ -408,6 +419,13 @@ static unsigned char *stbi_load_main(stbi__context *s, int *x, int *y, int *comp
    #ifndef STBI_NO_GIF
    if (stbi__gif_test(s))  return stbi__gif_load(s,x,y,comp,req_comp);
    #endif
+   /* others */
+   #ifndef STBI_NO_HDR
+   if (stbi__hdr_test(s)) {
+      float *hdr = stbi__hdr_load(s, x,y,comp,req_comp);
+      return stbi__hdr_to_ldr(hdr, *x, *y, req_comp ? req_comp : *comp);
+   }
+   #endif
    #ifndef STBI_NO_PSD
    if (stbi__psd_test(s))  return stbi__psd_load(s,x,y,comp,req_comp);
    #endif
@@ -416,21 +434,6 @@ static unsigned char *stbi_load_main(stbi__context *s, int *x, int *y, int *comp
    #endif
    #ifndef STBI_NO_PNM
    if (stbi__pnm_test(s))  return stbi__pnm_load(s,x,y,comp,req_comp);
-   #endif
-   #ifndef STBI_NO_DDS
-   if (stbi__dds_test(s))  return stbi__dds_load(s,x,y,comp,req_comp);
-   #endif
-   #ifndef STBI_NO_PVR
-   if (stbi__pvr_test(s))  return stbi__pvr_load(s,x,y,comp,req_comp);
-   #endif
-   #ifndef STBI_NO_PKM
-   if (stbi__pkm_test(s))  return stbi__pkm_load(s,x,y,comp,req_comp);
-   #endif
-   #ifndef STBI_NO_HDR
-   if (stbi__hdr_test(s)) {
-      float *hdr = stbi__hdr_load(s, x,y,comp,req_comp);
-      return stbi__hdr_to_ldr(hdr, *x, *y, req_comp ? req_comp : *comp);
-   }
    #endif
 
    #ifndef STBI_NO_TGA

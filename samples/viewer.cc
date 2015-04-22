@@ -14,8 +14,15 @@ int main( int argc, char **argv ) {
     }
 
     for( int i = 1; i < argc; ++i ) {
-        spot::image base( argv[i] );
-        display( base, argv[i] );        
+        std::cout << "[    ] " << argv[i];
+        try {
+            spot::image base( argv[i] );
+            std::cout << (base.loaded() ? "\r[ OK ]" : "\r[FAIL]") << std::endl;
+            display( base, argv[i] );                    
+        }
+        catch(...) {
+            std::cout << "\r[FAIL]" << std::endl;
+        }
     }
 
     return 0;

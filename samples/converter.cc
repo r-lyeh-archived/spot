@@ -49,7 +49,7 @@ int help( int argc, const char **argv ) {
     std::cout << "options:  " << std::endl;
     std::cout << "          -h, --help                       this help" << std::endl;
     std::cout << "          -m, --mipmaps                    generate mipmaps" << std::endl;
-    std::cout << "          -p, --preview                    preview conversion (does not write to disk)" << std::endl;
+    std::cout << "          -p, --preview                    preview conversion" << std::endl;
     std::cout << "          -u, --unique-extension           do not append new extension in output basename (default: disabled)" << std::endl;
     std::cout << "          -f ext, --force-extension ext    use provided extension in output basename despite conversion format (default: disabled)" << std::endl;
     std::cout << "          -o folder, --output folder       set folder of output files (default: input image folder)" << std::endl;
@@ -92,42 +92,52 @@ bool convert( const std::string &in, const std::string &out, const std::string &
         return false;
     }
 
-    if( preview ) {
-        if( generate_mipmaps ) {
-            spot::image dst = build_mipmaps( img );
-            display( concat(img, dst), in );
-        } else {
-            display( img, in );
-        }
-        return true;
-    }
+    spot::image backup = img;
 
     if( generate_mipmaps ) {
         img = build_mipmaps( img );
     }
 
+    bool ok = false;
     /**/ if( hint == "png" ) {
-        return img.save_as_png( out );
+        ok = img.save_as_png( out );
     }
     else if( hint == "jpg" ) {
-        return img.save_as_jpg( out, quality );
+        ok = img.save_as_jpg( out, quality );
     }
     else if( hint == "pug" ) {
-        return img.save_as_pug( out, quality );
+        ok = img.save_as_pug( out, quality );
     }
     else if( hint == "bmp" ) {
-        return img.save_as_bmp( out );
+        ok = img.save_as_bmp( out );
     }
     else if( hint == "tga" ) {
-        return img.save_as_tga( out );
+        ok = img.save_as_tga( out );
     }
     else if( hint == "dds" ) {
-        return img.save_as_dds( out );
+        ok = img.save_as_dds( out );
     }
     else if( hint == "webp" ) {
-        return img.save_as_webp( out, quality );
+        ok = img.save_as_webp( out, quality );
     }
-    return false;
+    else if( hint == "ktx" ) {
+        ok = img.save_as_ktx( out, quality );
+    }
+    else if( hint == "pvr" ) {
+        ok = img.save_as_pvr( out, quality );
+    }
+    else if( hint == "pkm" ) {
+        ok = img.save_as_pkm( out, quality );
+    }
+
+    if( ok && preview ) {
+        img = spot::image( out );
+        if( img.loaded() ) {
+            display( concat(backup, img, diff(backup, img)), in );
+        }
+    }
+
+    return ok;
 }
 
 
@@ -158,9 +168,9 @@ int main( int argc, const char **argv ) {
             else if( arg == "-m" || arg == "--mipmaps" ) generate_mipmaps = true;
             else if( arg == "-p" || arg == "--preview" ) preview = true;
             else if( arg == "-u" || arg == "--unique-extension" ) unique_extension = true;
-            else if( arg == "-f" || arg == "--force-extension" && has_second_arg ) ext = argv[++i];
-            else if( arg == "-o" || arg == "--output" && has_second_arg ) folder = argv[++i];
-            else if( arg == "-q" || arg == "--quality" && has_second_arg ) quality = strtoul( argv[++i], 0, 0 );
+            else if((arg == "-f" || arg == "--force-extension" ) && has_second_arg ) ext = argv[++i];
+            else if((arg == "-o" || arg == "--output" ) && has_second_arg ) folder = argv[++i];
+            else if((arg == "-q" || arg == "--quality" ) && has_second_arg ) quality = strtoul( argv[++i], 0, 0 );
             else {
                 std::cerr << "[WARN] option ignored: " << argv[i] << std::endl;
             }

@@ -30,11 +30,14 @@ int main( int argc, char **argv ) {
         base = piece[0]->paste( i * block, 0, piece[i]->copy( i * block, 0, block, base.h ) );
     }
 
-    base.save_as_png("collage.png");
+    base.save_as_bmp("collage.bmp");
     base.save_as_dds("collage.dds");
-    base.save_as_bmp("collage.dds");
     base.save_as_jpg("collage.jpg", 80);
+    base.save_as_ktx("collage.ktx", 10);
+    base.save_as_pkm("collage.pkm", 10);
+    base.save_as_png("collage.png");
     base.save_as_pug("collage.pug", 80);
+    base.save_as_pvr("collage.pvr", 10);
     base.save_as_webp("collage.webp", 80);
 
     display( base, "spot collage sample" );
