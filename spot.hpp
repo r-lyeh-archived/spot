@@ -17,7 +17,7 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.0.1"
+#define SPOT_VERSION "2.0.2"
 
 #include <stddef.h>
 #include <string.h>
@@ -64,96 +64,6 @@ namespace spot
         bool writefile( const std::string &filename, const std::string &data );
     }
 
-#if 0
-    struct mem {
-        enum {
-            none,
-            use_malloc,
-            use_array_8,
-            use_array_16,
-            use_array_32,
-            use_vector_8,
-            use_vector_16,
-            use_vector_32,
-        };
-
-        union {
-        void     *ptr;
-        uint8_t  *ptr8;
-        uint16_t *ptr16;
-        uint32_t *ptr32;
-        std::vector<uint8_t>  *v8;
-        std::vector<uint16_t> *v16;
-        std::vector<uint32_t> *v32;
-        };
-        unsigned len;
-        unsigned allocator;
-
-        mem() : mem(0,0,none)
-        {}
-
-        mem( void *ptr, unsigned len, unsigned allocator ) {
-            assign( ptr, len, allocator );
-        }
-
-        void assign( void *ptr, unsigned len, unsigned allocator ) {
-            clear();
-            this->ptr = ptr;
-            this->len = len;
-            this->allocator = allocator;           
-        }
-
-        void *data() const {
-            /**/ if( allocator == use_malloc ) return ptr;
-            else if( allocator == use_array_8 ) return ptr8;
-            else if( allocator == use_array_16 ) return ptr16;
-            else if( allocator == use_array_32 ) return ptr32;
-            else if( allocator == use_vector_8 ) return v8->data();
-            else if( allocator == use_vector_16 ) return v16->data();
-            else if( allocator == use_vector_32 ) return v32->data();
-            return 0;
-        }
-
-        void clear() {
-            if( ptr && allocator > 0 ) {
-                /**/ if( allocator == use_malloc ) free( ptr );
-                else if( allocator == use_array_8 ) delete [] ptr8;
-                else if( allocator == use_array_16 ) delete [] ptr16;
-                else if( allocator == use_array_32 ) delete [] ptr32;
-                else if( allocator == use_vector_8 ) delete v8;
-                else if( allocator == use_vector_16 ) delete v16;
-                else if( allocator == use_vector_32 ) delete v32;
-                ptr = 0;
-            }
-        }
-
-        ~mem() {
-            clear();
-        }
-
-        mem( const mem &other ) {
-            operator=(other);
-        }
-
-        mem &operator=( const mem &other ) {
-            if( this != &other ) {
-                assign( other.ptr, other.len, other.allocator );
-                if( allocator ) {
-                    /**/ if( allocator == use_malloc ) ptr = malloc( len );
-                    else if( allocator == use_array_8 ) ptr8 = new uint8_t [ len ];
-                    else if( allocator == use_array_16 ) ptr16 = new uint16_t [ len / 2 + 1 ];
-                    else if( allocator == use_array_32 ) ptr32 = new uint32_t [ len / 4 + 1 ];
-                    else if( allocator == use_vector_8 ) v8 = new std::vector<uint8_t>( len );
-                    else if( allocator == use_vector_16 ) v16 = new std::vector<uint16_t>( len / 2 + 1 );
-                    else if( allocator == use_vector_32 ) v32 = new std::vector<uint32_t>( len / 4 + 1 );
-                }
-                memcpy( ptr, other.ptr, other.len );
-            }
-            return *this;
-        }
-    };
-#endif    
-
     enum texel_formats {
         RGB_888,
         RGBA_8888,
@@ -173,8 +83,9 @@ namespace spot
         std::string error;
 
         bool is_valid() const;
-        bool is_etc1() const;
         bool is_compressed() const;
+        bool is_etc1() const;
+        bool is_pvrtc() const;
     };
 
     bool info( stream &nfo, const void *data, size_t len );
@@ -420,8 +331,8 @@ namespace spot
         int space;
 
         rect( size_t w = 0, size_t h = 0, size_t d = 0, const unit &filler = unit() ) :
-			id(0), delay(0), w(w), h(h), d(d), space(SPACE_RGBA),
-			std::vector<unit>(w*(h?h:1)*(d?d:1),filler)
+            id(0), delay(0), w(w), h(h), d(d), space(SPACE_RGBA),
+            std::vector<unit>(w*(h?h:1)*(d?d:1),filler)
         {}
 
         bool loaded() const {
@@ -1255,24 +1166,25 @@ namespace spot
         }
 
         texture( const stream &sm ) : rect<pixel>(sm.w,sm.h,sm.d) {
-			init( sm );
-		}
+            import_texture( sm );
+        }
 
         texture( const void *ptr, unsigned len, unsigned w, unsigned h, unsigned d = 0, unsigned fmt = RGB_888 ) : rect<pixel>(w,h,d) {
-			stream sm = {};
-			sm.w = w;
-			sm.h = h;
-			sm.d = d;
-			sm.fmt = fmt;
-			sm.in = ptr;
-			sm.len = len;
-			sm.comp = 0;
-			sm.deleter = 0;
-			sm.hint = 0;
-			init( sm );
-        }	
+            stream sm = {};
+            sm.w = w;
+            sm.h = h;
+            sm.d = d;
+            sm.fmt = fmt;
+            sm.in = ptr;
+            sm.len = len;
+            sm.comp = 0;
+            sm.deleter = 0;
+            sm.hint = 0;
+            import_texture( sm );
+        }   
 
-		private: void init( const stream &st ) {
+        private: 
+        void import_texture( const stream &st ) {
             if( st.fmt == RGB_888 ) {
                 uint8_t *rgb = (uint8_t*)st.in;
                 for( auto &px : *this ) {

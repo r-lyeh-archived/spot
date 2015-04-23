@@ -86,29 +86,35 @@ struct pvr3 {
     }
 
     bool is_currently_supported() const {
-        return is_pvr() 
-            && hd.flags != 0x2           // 0x02, colour values within the texture have been pre-multiplied by the alpha values
-            && hd.pixel_format_1 == 6    // see table1 above
-            && hd.pixel_format_2 == 0    // 0
-            && hd.color_space == 0       // 0 linear rgb, 1 standard rgb 
-            && hd.channel_type == 0      // see table2 above
-            && hd.height >= 1            // 1d texture
-            && hd.width >= 1             // 2d texture; >= 1
-            && hd.depth <= 1             // 3d texture; >= 1
-            && hd.num_surfaces <= 1      // num surfaces in texture array; >= 1
-            && hd.num_faces <= 1         // num faces in cubemap; >= 1
-            && hd.num_mipmaps <= 1       // num levels of mipmaps; >= 1
-            && hd.metadata_size == 0;    // length of following header            
+        bool ok = true;
+        ok &= is_pvr(); 
+        ok &= hd.flags != 0x2;           // 0x02, colour values within the texture have been pre-multiplied by the alpha values
+        ok &= hd.color_space == 0;       // 0 linear rgb, 1 standard rgb 
+        ok &= hd.channel_type == 0;      // see table2 above
+        ok &= hd.height >= 1;            // 1d texture
+        ok &= hd.width >= 1;             // 2d texture; >= 1
+        ok &= hd.depth <= 1;             // 3d texture; >= 1
+        ok &= hd.num_surfaces <= 1;      // num surfaces in texture array; >= 1
+        ok &= hd.num_faces <= 1;         // num faces in cubemap; >= 1
+     // ok &= hd.num_mipmaps <= 1;       // num levels of mipmaps; >= 1
+     // ok &= hd.metadata_size == 0;     // length of following header
+        ok &= hd.pixel_format_2 == 0;    // 0
+        ok &= (                          // see table1 above
+               hd.pixel_format_1 == table1::ETC1
+            || hd.pixel_format_1 <= table1::PVRTC_4BPP_RGBA
+        );
+        return ok;
+    }
+
+    int get_spot_fmt() const {
+        return hd.pixel_format_1;
     }
 
     std::ostream &debug( std::ostream &ss ) const {
         if( !is_pvr() ) {
             ss << "not a .pvr3 header" << std::endl;
-        }
-        else if( !is_currently_supported() ) {
-            ss << "unsupported .pvr3 file" << std::endl;
-        }
-        else {
+        } else {
+            ss << "supported .pvr3 file: " << is_currently_supported() << std::endl;
             ss << std::hex;
             ss << "pvr.version: 0x" << hd.version << std::endl;
             ss << "pvr.flags: 0x" << hd.flags << std::endl;

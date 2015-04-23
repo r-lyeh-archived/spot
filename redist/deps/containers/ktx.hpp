@@ -40,22 +40,31 @@ struct ktx {
     }
 
     bool is_currently_supported() const {
-        return is_ktx() 
-            && hd.pixelDepth <= 1 
-            && hd.bytesOfKeyValueData == 0 
-            && hd.numberOfMipmapLevels <= 1 
-            && hd.numberOfArrayElements <= 1 
-            && hd.numberOfFaces <= 1;         
+        bool ok = true;
+        ok &= is_ktx();
+        ok &= hd.pixelDepth <= 1;
+//        ok &= hd.bytesOfKeyValueData == 0;
+//        ok &= hd.numberOfMipmapLevels <= 1;
+        ok &= hd.numberOfArrayElements <= 1;
+        ok &= hd.numberOfFaces <= 1;
+        ok &= get_spot_fmt() != -1;
+        return ok;
+    }
+
+    int get_spot_fmt() const {
+        if( hd.glInternalFormat == 0x8d64 && hd.glBaseInternalFormat == 0x1907 ) return pvr3::table1::ETC1;            // etc1
+        if( hd.glInternalFormat == 0x8c01 && hd.glBaseInternalFormat == 0x1907 ) return pvr3::table1::PVRTC_2BPP_RGB;  // pvrtc-2bpp-rgb
+        if( hd.glInternalFormat == 0x8c03 && hd.glBaseInternalFormat == 0x1908 ) return pvr3::table1::PVRTC_2BPP_RGBA; // pvrtc-2bpp-rgba
+        if( hd.glInternalFormat == 0x8c00 && hd.glBaseInternalFormat == 0x1907 ) return pvr3::table1::PVRTC_4BPP_RGB;  // pvrtc-4bpp-rgb
+        if( hd.glInternalFormat == 0x8c02 && hd.glBaseInternalFormat == 0x1908 ) return pvr3::table1::PVRTC_4BPP_RGBA; // pvrtc-4bpp-rgba
+        return -1;
     }
 
     std::ostream &debug( std::ostream &ss ) const {
         if( !is_ktx() ) {
             ss << "not a .ktx header" << std::endl;
-        }
-        else if( !is_currently_supported() ) {
-            ss << "unsupported .ktx file" << std::endl;
-        }
-        else {
+        } else {
+            ss << "supported .ktx file: " << is_currently_supported() << std::endl;                
             ss << std::hex;
             ss << "ktx.identifier0: 0x" << hd.identifier0 << std::endl;
             ss << "ktx.identifier1: 0x" << hd.identifier1 << std::endl;

@@ -73,7 +73,12 @@
 
 */
 
-#include <cassert>
+#include <assert.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <algorithm>
 #include <fstream>
@@ -89,10 +94,6 @@
 #define NANOSVG_IMPLEMENTATION      // Expands implementation
 #define NANOSVGRAST_IMPLEMENTATION  // Expands implementation
 
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
 #include "deps/nanosvg/src/nanosvg.h"
 #include "deps/nanosvg/src/nanosvgrast.h"
 
@@ -109,9 +110,9 @@
 #   include "deps/soil2/image_DXT.h"
 #   include "deps/soil2/image_DXT.c"
 #define clamp clamp2
-#   include "deps/soil2/etc1_utils.c"
+#   include "deps/etc1/etc1_utils.c"
 #   include "deps/soil2/image_helper.c"
-#   include "deps/rg_etc1/rg_etc1.cpp"
+#   include "deps/etc1/rg_etc1.cpp"
 #undef  clamp
 
 #include "deps/jpge/jpge.h"
@@ -131,19 +132,12 @@
 #   include "deps/soil2/SOIL2.c"
 #endif
 
-#include "deps/containers/pkm.hpp"
+namespace spot {
 #include "deps/containers/pvr3.hpp"
+#include "deps/containers/pkm.hpp"
 #include "deps/containers/ktx.hpp"
-
-#include <stdint.h>
-
-
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string>
+#include "deps/pvrtc/PVRTDecompress.cpp"
+}
 
 extern "C"
 int stbi_write_dds( char const *filename, int w, int h, int comp, const void *data ) {
@@ -257,7 +251,7 @@ static stbi_uc *stbi__convert_format2(unsigned char *data, int bpp_src, int bpp_
     }
 */
 
-static stbi_uc *decode_etc1_stream(const void *stream, int len, int width, int height, int req_comp, unsigned int *zlen)
+static stbi_uc *decode_etc1_stream(const void *stream, int len, int width, int height, unsigned int *zlen)
 {
     int img_x = width, img_y = height, img_n = 3;
 
@@ -276,6 +270,31 @@ static stbi_uc *decode_etc1_stream(const void *stream, int len, int width, int h
     }
 
     return NULL;
+}
+
+static stbi_uc *decode_pvrtc_stream(const void *stream, int len, int width, int height, int px_type, unsigned int *zlen)
+{
+    int img_x = width, img_y = height, img_n = 3;
+    int bitmode = 0;
+
+    switch( px_type ) {
+        default: return 0;
+        case pvr3::table1::PVRTC_2BPP_RGB:
+        case pvr3::table1::PVRTC_2BPP_RGBA: bitmode = 1; img_n = 4; break;
+        case pvr3::table1::PVRTC_4BPP_RGB:
+        case pvr3::table1::PVRTC_4BPP_RGBA: img_n = 4; break;
+    }
+
+    // Load only the first mip map level
+    unsigned int bytes = img_x * img_y * 4;
+    stbi_uc *unpacked = (stbi_uc *)malloc( bytes );
+    if( unpacked ) {
+        Decompress( (AMTC_BLOCK_STRUCT*)stream, bitmode, img_x, img_y, 1, (unsigned char*)unpacked );
+        if( zlen ) *zlen = bytes;
+        return unpacked;
+    }
+
+    return 0;
 }
 
 bool stream::is_valid() const {
@@ -647,6 +666,9 @@ namespace spot
         }        
 
         /*
+            transcoding
+            ===========
+
             std::cout << "fast: " << bench([&]{ encode_as_etc1( img.rgba32().data(), img.w, img.h, 32, SPOT_ETC1_LOW );} ) << std::endl;
             std::cout << "medium: " << bench([&]{ encode_as_etc1( img.rgba32().data(), img.w, img.h, 32, SPOT_ETC1_MEDIUM );} ) << std::endl;
             //std::cout << "high: " << bench([&]{ encode_as_etc1( img.rgba32().data(), img.w, img.h, 32, SPOT_ETC1_HIGH );} ) << std::endl;
@@ -735,6 +757,7 @@ namespace spot
             if( f.is_currently_supported() ) {
                 sm.w = int(f.hd.width);
                 sm.h = int(f.hd.height);
+                sm.fmt = f.get_spot_fmt();
                 sm.comp = 3;
                 sm.hint = IS_PKM;
                 return true;
@@ -749,6 +772,7 @@ namespace spot
             if( f.is_currently_supported() ) {
                 sm.w = int(f.hd.pixelWidth);
                 sm.h = int(f.hd.pixelHeight);
+                sm.fmt = f.get_spot_fmt();
                 sm.comp = 3;
                 sm.hint = IS_KTX;
                 return true;
@@ -763,6 +787,7 @@ namespace spot
             if( f.is_currently_supported() ) {
                 sm.w = int(f.hd.width);
                 sm.h = int(f.hd.height);
+                sm.fmt = f.get_spot_fmt();
                 sm.comp = 3;
                 sm.hint = IS_PVR3;
                 return true;
@@ -863,28 +888,41 @@ namespace spot
             }
         }
         break; 
+        case IS_PKM :{
+            unsigned int zlen;
+            const stbi_uc *data = (const stbi_uc *)src.in;
+            size_t offset = sizeof(pkm::header);
+            imageuc = decode_etc1_stream( &data[offset], src.len - offset, imageWidth, imageHeight, &zlen);
+            deleter = FREE_DELETER;
+            imageComp = 3;
+        }
+        break; 
         case IS_KTX :{
             unsigned int zlen;
             const stbi_uc *data = (const stbi_uc *)src.in;
-            imageuc = decode_etc1_stream( &data[sizeof(ktx::header) + 4], src.len - sizeof(ktx::header) - 4, imageWidth, imageHeight, 3, &zlen);
+            size_t offset = sizeof(ktx::header) + ((ktx::header *)src.in)->bytesOfKeyValueData + 4;
+            /****/ if( src.fmt == pvr3::table1::ETC1 ) {
+                imageuc = decode_etc1_stream( &data[offset], src.len - offset, imageWidth, imageHeight, &zlen);
+                imageComp = 3;
+            } else if( src.fmt <= pvr3::table1::PVRTC_4BPP_RGBA ) {
+                imageuc = decode_pvrtc_stream( &data[offset], src.len - offset, imageWidth, imageHeight, src.fmt, &zlen);
+                imageComp = (src.fmt == pvr3::table1::PVRTC_2BPP_RGBA || pvr3::table1::PVRTC_4BPP_RGBA) ? 4 : 3;
+            }
             deleter = FREE_DELETER;
-            imageComp = 3;
         }
         break; 
         case IS_PVR3: {
             unsigned int zlen;
             const stbi_uc *data = (const stbi_uc *)src.in;
-            imageuc = decode_etc1_stream( &data[sizeof(pvr3::header) + 0], src.len - sizeof(pvr3::header) - 0, imageWidth, imageHeight, 3, &zlen);
+            size_t offset = sizeof(pvr3::header) + ((pvr3::header *)src.in)->metadata_size;
+            /****/ if( src.fmt == pvr3::table1::ETC1 ) {
+                imageuc = decode_etc1_stream( &data[offset], src.len - offset, imageWidth, imageHeight, &zlen);
+                imageComp = 3;                
+            } else if( src.fmt <= pvr3::table1::PVRTC_4BPP_RGBA ) {
+                imageuc = decode_pvrtc_stream( &data[offset], src.len - offset, imageWidth, imageHeight, src.fmt, &zlen);
+                imageComp = (src.fmt == pvr3::table1::PVRTC_2BPP_RGBA || pvr3::table1::PVRTC_4BPP_RGBA) ? 4 : 3;                
+            }
             deleter = FREE_DELETER;
-            imageComp = 3;
-        }
-        break; 
-        case IS_PKM :{
-            unsigned int zlen;
-            const stbi_uc *data = (const stbi_uc *)src.in;
-            imageuc = decode_etc1_stream( &data[sizeof(pkm::header) + 0], src.len - sizeof(pkm::header) - 0, imageWidth, imageHeight, 3, &zlen);
-            deleter = FREE_DELETER;
-            imageComp = 3;
         }
         break; 
         case IS_STBI: {

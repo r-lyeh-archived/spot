@@ -22,12 +22,11 @@ if exist transfer.exe exit /b
 set target=
 set devel=/Ox /Oy /DNDEBUG /MT
 
-rem set target=converter.cc
+rem set target=info
 rem set devel=/Zi /Oy- /DDEBUG /MDd
 
 if not "%target%"=="" (
-for %%i in (..\samples\%target%) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
-converter webp C:\prj\PHD\prototypes\nova_phd\game\data\swf\.textures\assets_Animations_atlas1_LD_alpha.bmp
+for %%i in (..\samples\%target%.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
 exit/b
 )
 
@@ -35,8 +34,9 @@ del info.exe
 for %%i in (..\samples\info.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
 info ..\images\panda.pug
 info ..\images\etc1.ktx
+info ..\images\pvrtc-2bpp-rgba.pvr
 info ..\images\test.pkm
-info ..\images\fail\female_hair002_df.pvr
+info ..\images\female_hair002_df.pvr
 info ..\images\fallingwater.jpg
 info ..\images\test-dxt5.crn
 rem exit/b
@@ -46,8 +46,9 @@ for %%i in (..\samples\viewer.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot
 viewer ..\images\field_128_cube.dds
 viewer ..\images\panda.pug
 viewer ..\images\etc1.ktx
+viewer ..\images\pvrtc-2bpp-rgba.pvr
 viewer ..\images\test.pkm
-viewer ..\images\fail\female_hair002_df.pvr
+viewer ..\images\female_hair002_df.pvr
 viewer ..\images\fallingwater.jpg
 viewer ..\images\test-dxt5.crn
 
@@ -66,4 +67,3 @@ if exist filt.exe filt.exe ..\images\1.webp    --rgba
 if exist filt.exe filt.exe ..\images\23.svg    --rgba --bleed
 if exist filt.exe filt.exe ..\images\panda.png --hsla --bleed
 if exist filt.exe filt.exe ..\images\panda.png --hsla --bleed --check
-

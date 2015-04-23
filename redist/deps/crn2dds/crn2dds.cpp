@@ -12,6 +12,37 @@
 #include <stddef.h> // For NULL, size_t
 #include <cstring> // for malloc etc
 
+#ifndef USE_MALLOC_USABLE_SIZE
+// Define HAVE_MALLOC_USABLE_SIZE to 1 to indicate that the current
+// system has malloc_usable_size(). Which takes the address of a malloc-ed
+// pointer, and return the size of the underlying storage block.
+// This is useful to optimize heap memory usage.
+// Including at least one C library header is required to define symbols
+// like __GLIBC__. Choose carefully because some headers like <stddef.h>
+// are actually provided by the compiler, not the C library and do not
+// define the macros we need.
+#include <stdint.h>
+#if defined(__GLIBC__)
+#  include <malloc.h>
+#  define USE_MALLOC_USABLE_SIZE  1
+#elif defined(__APPLE__) || defined(__FreeBSD__)
+#  include <malloc/malloc.h>
+#  define malloc_usable_size  malloc_size
+#  define USE_MALLOC_USABLE_SIZE  1
+#elif defined(__ANDROID_API__)
+#  include <malloc.h>
+extern "C" size_t dlmalloc_usable_size(void*);
+#  define malloc_usable_size dlmalloc_usable_size
+#  define USE_MALLOC_USABLE_SIZE  1
+#elif defined(_WIN32)
+#  include <malloc.h>
+#  define malloc_usable_size _msize
+#  define USE_MALLOC_USABLE_SIZE  1
+#else
+#  define USE_MALLOC_USABLE_SIZE  0
+#endif
+#endif // USE_MALLOC_USABLE_SIZE
+
 #include "crn_decomp.h"
 
 extern "C" {

@@ -20,17 +20,18 @@ struct pkm {
     }
 
     bool is_currently_supported() const {
-        return is_pkm() && hd.type == 0;
+        return is_pkm() && get_spot_fmt() != -1;
+    }
+
+    int get_spot_fmt() const {
+        return hd.type == 0 ? pvr3::table1::ETC1 : -1;
     }
 
     std::ostream &debug( std::ostream &ss ) const {
         if( !is_pkm() ) {
             ss << "not a .pkm header" << std::endl;
-        }
-        else if( !is_currently_supported() ) {
-            ss << "unsupported .pkm file" << std::endl;
-        }
-        else {
+        } else {
+            ss << "supported .pkm file: " << is_currently_supported() << std::endl;
             ss << "pkm.id: "; ss.write( (const char *)&hd.id, sizeof(hd.id) ); ss << std::endl;
             ss << "pkm.version: "; ss.write( (const char *)&hd.version, sizeof(hd.version) ); ss << std::endl;
             ss << std::hex;

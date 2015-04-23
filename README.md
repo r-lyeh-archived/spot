@@ -4,7 +4,7 @@ Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-
 - Spot is a compact and embeddable pixel/image library (C++11).
 - Spot supports both RGBA/HSLA pixel types.
 - Spot provides both pixel and image algebra for pixel/image manipulation.
-- Spot loads WEBP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PVR2 (PVRTC), PVR3 (ETC1), KTX (ETC1), PKM (ETC1), HDR, PIC, PNM (PPM/PGM), CRN, PUG and vectorial SVG files.
+- Spot loads WEBP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PVR2/3 (ETC1/PVRTC), KTX (ETC1/PVRTC), PKM (ETC1), HDR, PIC, PNM (PPM/PGM), CRN, PUG and vectorial SVG files.
 - Spot saves WEBP, JPG, PNG, TGA, BMP, DDS, PVR3 (ETC1), KTX (ETC1), PKM (ETC1) and PUG files.
 - Spot is self-contained. All libraries are included and amalgamated.
 - Spot is tiny. A couple of source files.
@@ -23,6 +23,7 @@ Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-
 | JPG files (progressive) | yes | no |
 | JPG files | yes | yes |
 | KTX (ETC1) files | yes* | yes* |
+| KTX (PVRTC) files | yes* | no |
 | PIC files | yes | no |
 | PKM (ETC1) files | yes | yes |
 | PNG files | yes | yes |
@@ -31,11 +32,12 @@ Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-
 | PUG files | yes | yes |
 | PVR2 (PVRTC) files | yes* | no |
 | PVR3 (ETC1) files | yes* | yes* |
+| PVR3 (PVRTC) files | yes* | no |
 | SVG files (rasterized) | yes | no |
 | TGA files | yes | yes |
 | WEBP files | yes | yes |
 
-(*) partially supported, preliminary, warning, caution, atchung, beware of dog
+(*) partial support, preliminary, warning, caution, atchung, beware of dog
 
 ## todo
 - document api
@@ -193,5 +195,14 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
-- 2015/04/23 v2.0.1: bugfixed b/w images;
-- 2015/04/22 v2.0.0: etc1 encode/decode support; pvr3/ktx/pkm load/save support; a few optimizations
+- v2.0.2 (2015/04/23)
+  - better ktx/pvr3 file support
+  - pvrtc decode stream support
+  - android support (again)
+  - increased tests
+- v2.0.1 (2015/04/23)
+  - bugfixed many b/w images
+- v2.0.0 (2015/04/22)
+  - etc1 encode/decode stream support
+  - pvr3/ktx/pkm load/save file support
+  - a few optimizations
