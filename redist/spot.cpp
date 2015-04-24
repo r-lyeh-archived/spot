@@ -132,6 +132,12 @@
 #   include "deps/soil2/SOIL2.c"
 #endif
 
+#include "deps/jthlim-pvrtccompressor/BitScale.cpp"
+#include "deps/jthlim-pvrtccompressor/MortonTable.cpp"
+#include "deps/jthlim-pvrtccompressor/PvrTcDecoder.cpp"
+#include "deps/jthlim-pvrtccompressor/PvrTcEncoder.cpp"
+#include "deps/jthlim-pvrtccompressor/PvrTcPacket.cpp"
+
 namespace spot {
 #include "deps/containers/pvr3.hpp"
 #include "deps/containers/pkm.hpp"
@@ -342,9 +348,62 @@ bool load( std::string &data, const std::string &name, uint32_t reserved = 0 ) {
 }
 */
 
+stream encode_as_pvrtc( const void *bgra, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
+    stream out = {};
+
+    /*
+    auto is_power_of_two = []( unsigned x ) {
+        return ((x & (x - 1)) == 0);
+    };
+    if( !is_power_of_two(w) ) return out;
+    if( !is_power_of_two(h) ) return out;
+    */
+    bool is_4bpp = true; //quality >= 50;
+    if( w % 4 ) return out;
+    if( h % 4 ) return out;
+
+    // @todo check is %4
+    // Alloc mem
+    int len = ( is_4bpp ? w * h / 2 : w * h / 4 ) + 4;
+    uint8_t *dst = new uint8_t [ reserved + len ];
+    if( !dst ) return out;
+    uint8_t *pvrtc = &dst[ reserved ];
+
+    // init
+    out.w = w;
+    out.h = h;
+    out.d = 1;
+    out.out = dst;
+    out.len = len;
+
+    /****/ if( bpp == 24 ) {
+        Javelin::RgbBitmap bitmap( w, h );
+        memcpy( bitmap.GetData(), bgra, w * h * 3 );
+        //if( is_4bpp ) {
+            out.fmt = pvr3::table1::PVRTC_4BPP_RGB;
+            PvrTcEncoder::EncodeRgb4Bpp(pvrtc, bitmap);
+        /*} else {
+            out.fmt = pvr3::table1::PVRTC_2BPP_RGB;
+            PvrTcEncoder::EncodeRgb2Bpp(pvrtc, bitmap);            
+        }*/
+    } else if( bpp == 32 ) {
+        Javelin::RgbaBitmap bitmap( w, h );
+        memcpy( bitmap.GetData(), bgra, w * h * 4 );
+        //if( is_4bpp ) {
+            out.fmt = pvr3::table1::PVRTC_4BPP_RGBA;
+            PvrTcEncoder::EncodeRgba4Bpp(pvrtc, bitmap);
+        /*} else {
+            out.fmt = pvr3::table1::PVRTC_2BPP_RGBA;
+            PvrTcEncoder::EncodeRgba2Bpp(pvrtc, bitmap);            
+        }*/
+    } 
+
+    return out;    
+}
+
 stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
 
-    stream out; out.fmt = pvr3::table1::RGBG8888;
+    stream out = {};
 
     /* Check for power of 2 {
     auto is_power_of_two = []( unsigned x ) {
@@ -415,8 +474,8 @@ bool save_pkm_etc1( std::string &out, const stream &sm, unsigned reserved ) {
     return out.clear(), false;
 }
 
-bool save_pvr_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) {
-    if( sm.is_valid() && sm.is_etc1() ) {
+bool save_pvr( std::string &out, const stream &sm, unsigned reserved = 0 ) {
+    if( sm.is_valid() /* && sm.is_etc1() */ ) {
         pvr3 pvr;
         pvr.hd.version = tole32(0x03525650);     // 0x03525650, if endianess does not match ; 0x50565203, if endianess does match
         pvr.hd.flags = tole32(0);                // 0x02, colour values within the texture have been pre-multiplied by the alpha values
@@ -440,25 +499,32 @@ bool save_pvr_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) 
     return out.clear(), false;
 }
 
-bool save_ktx_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) {
-    if( sm.is_valid() && sm.is_etc1() ) {
+bool save_ktx( std::string &out, const stream &sm, unsigned reserved = 0 ) {
+    if( sm.is_valid() ) {
         ktx k;
-        k.hd.identifier0 = tole32(0x58544bab); 
-        k.hd.identifier1 = tole32(0xbb313120); 
-        k.hd.identifier2 = tole32(0xa1a0a0d);  
-        k.hd.endianness = tole32(0x4030201);
-        k.hd.glType = tole32(0x0); // table 8.2 of opengl 4.4 spec; UNSIGNED_BYTE, UNSIGNED_SHORT_5_6_5, etc.)
-        k.hd.glTypeSize = tole32(0x1); // 1 for compressed data
-        k.hd.glFormat = tole32(0x0); // table 8.3 of opengl 4.4 spec; RGB, RGBA, BGRA...
-        k.hd.glInternalFormat = tole32(0x8d64); // table 8.14 of opengl 4.4 spec; ETC1_RGB8_OES (0x8D64)
-        k.hd.glBaseInternalFormat = tole32(0x1907); // table 8.11 of opengl 4.4 spec; GL_RGB (0x1907), RGBA, ALPHA...
-        k.hd.pixelWidth = tole32(sm.w);
-        k.hd.pixelHeight = tole32(sm.h);
-        k.hd.pixelDepth = tole32(0);
-        k.hd.numberOfArrayElements = tole32(0);
-        k.hd.numberOfFaces = tole32(1);
-        k.hd.numberOfMipmapLevels = tole32(1);
-        k.hd.bytesOfKeyValueData = tole32(0);
+        auto &hd = k.hd;
+        hd.identifier0 = tole32(0x58544bab); 
+        hd.identifier1 = tole32(0xbb313120); 
+        hd.identifier2 = tole32(0xa1a0a0d);  
+        hd.endianness = tole32(0x4030201);
+        hd.glType = tole32(0x0); // table 8.2 of opengl 4.4 spec; UNSIGNED_BYTE, UNSIGNED_SHORT_5_6_5, etc.)
+        hd.glTypeSize = tole32(0x1); // 1 for compressed data
+        hd.glFormat = tole32(0x0); // table 8.3 of opengl 4.4 spec; RGB, RGBA, BGRA...
+        // glInternalFormat:     table 8.14 of opengl 4.4 spec; ETC1_RGB8_OES (0x8D64)
+        // glBaseInternalFormat: table 8.11 of opengl 4.4 spec; GL_RGB (0x1907), RGBA, ALPHA...
+        /**/ if( sm.fmt == pvr3::table1::ETC1 )            { hd.glInternalFormat = tole32(0x8d64), hd.glBaseInternalFormat = tole32(0x1907); }
+        else if( sm.fmt == pvr3::table1::PVRTC_2BPP_RGB )  { hd.glInternalFormat = tole32(0x8c01), hd.glBaseInternalFormat = tole32(0x1907); }
+        else if( sm.fmt == pvr3::table1::PVRTC_2BPP_RGBA ) { hd.glInternalFormat = tole32(0x8c03), hd.glBaseInternalFormat = tole32(0x1908); }
+        else if( sm.fmt == pvr3::table1::PVRTC_4BPP_RGB )  { hd.glInternalFormat = tole32(0x8c00), hd.glBaseInternalFormat = tole32(0x1907); }
+        else if( sm.fmt == pvr3::table1::PVRTC_4BPP_RGBA ) { hd.glInternalFormat = tole32(0x8c02), hd.glBaseInternalFormat = tole32(0x1908); }
+        else return false;
+        hd.pixelWidth = tole32(sm.w);
+        hd.pixelHeight = tole32(sm.h);
+        hd.pixelDepth = tole32(0);
+        hd.numberOfArrayElements = tole32(0);
+        hd.numberOfFaces = tole32(1);
+        hd.numberOfMipmapLevels = tole32(1);
+        hd.bytesOfKeyValueData = tole32(0);
         if( devel ) k.debug(std::cout);
 
         out.resize( sizeof(ktx::header) + reserved );
@@ -468,13 +534,13 @@ bool save_ktx_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) 
     return out.clear(), false;
 }
 
-std::string save_pvr_etc1( const stream &sm, unsigned reserved = 0 ) {
+std::string save_pvr( const stream &sm, unsigned reserved = 0 ) {
     std::string out;
-    return save_pvr_etc1( out, sm, reserved ) ? out : std::string();
+    return save_pvr( out, sm, reserved ) ? out : std::string();
 }
-std::string save_ktx_etc1( const stream &sm, unsigned reserved = 0 ) {
+std::string save_ktx( const stream &sm, unsigned reserved = 0 ) {
     std::string out;
-    return save_ktx_etc1( out, sm, reserved ) ? out : std::string();
+    return save_ktx( out, sm, reserved ) ? out : std::string();
 }
 std::string save_pkm_etc1( const stream &sm, unsigned reserved = 0 ) {
     std::string out;
@@ -629,9 +695,9 @@ namespace spot
 
         std::string encode_ktx( unsigned w, unsigned h, const void *data, unsigned quality ) {
             if( w && h && data && quality ) {
-                stream sm = encode_as_etc1( data, w, h, 32, quality );
+                stream sm = encode_as_etc1( data, w, h, 24, quality );
                 std::stringstream ss;
-                ss << save_ktx_etc1(sm);
+                ss << save_ktx(sm);
                 uint32_t len32( sm.len );
                 ss.write( (const char *)&len32, 4 );
                 ss.write( (const char *)sm.in, sm.len );
@@ -643,9 +709,10 @@ namespace spot
 
         std::string encode_pvr( unsigned w, unsigned h, const void *data, unsigned quality ) {
             if( w && h && data && quality ) {
-                stream sm = encode_as_etc1( data, w, h, 32, quality );
+                //stream sm = encode_as_etc1( data, w, h, 32, quality );
+                stream sm = encode_as_pvrtc( data, w, h, 32, quality );
                 std::stringstream ss;
-                ss << save_pvr_etc1(sm);
+                ss << save_pvr(sm);
                 ss.write( (const char *)sm.in, sm.len );
                 delete [] ((uint8_t *)sm.out);
                 return ss.str();
@@ -655,7 +722,7 @@ namespace spot
 
         std::string encode_pkm( unsigned w, unsigned h, const void *data, unsigned quality ) {
             if( w && h && data && quality ) {
-                stream sm = encode_as_etc1( data, w, h, 32, quality );
+                stream sm = encode_as_etc1( data, w, h, 24, quality );
                 std::stringstream ss;
                 ss << save_pkm_etc1(sm);
                 ss.write( (const char *)sm.in, sm.len );

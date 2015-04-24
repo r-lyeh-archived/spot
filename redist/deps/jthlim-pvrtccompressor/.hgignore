@@ -1,0 +1,17 @@
+syntax: glob
+gen_bitscales
+pvrtctest
+rgb_after.tga
+rgb_before.tga
+Debug/
+pvrtc.opensdf
+pvrtc.sdf
+pvrtc.v12.suo
+globe_after.png
+globe_after.tga
+globe_before.tga
+globe_encoded.pvr
+rbb_encoded.pvr
+rgb_encoded.pvr
+alpha_after.tga
+alpha_before.tga

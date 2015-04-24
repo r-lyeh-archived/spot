@@ -19,16 +19,13 @@ if exist filt.exe exit /b
 if exist transfer.exe del transfer.exe 
 if exist transfer.exe exit /b
 
-set target=
-set devel=/Ox /Oy /DNDEBUG /MT
-
-rem set target=info
-rem set devel=/Zi /Oy- /DDEBUG /MDd
-
-if not "%target%"=="" (
-for %%i in (..\samples\%target%.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
+if not "%1"=="" (
+for %%i in (..\samples\%1.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* /Zi /Oy- /DDEBUG /MDd /EHsc /nologo /link setargv.obj
+%*
 exit/b
 )
+
+set devel=/Ox /Oy /DNDEBUG /MT
 
 del info.exe
 for %%i in (..\samples\info.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
@@ -67,3 +64,5 @@ if exist filt.exe filt.exe ..\images\1.webp    --rgba
 if exist filt.exe filt.exe ..\images\23.svg    --rgba --bleed
 if exist filt.exe filt.exe ..\images\panda.png --hsla --bleed
 if exist filt.exe filt.exe ..\images\panda.png --hsla --bleed --check
+
+set devel= 

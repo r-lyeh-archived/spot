@@ -5,7 +5,7 @@ Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-
 - Spot supports both RGBA/HSLA pixel types.
 - Spot provides both pixel and image algebra for pixel/image manipulation.
 - Spot loads WEBP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PVR2/3 (ETC1/PVRTC), KTX (ETC1/PVRTC), PKM (ETC1), HDR, PIC, PNM (PPM/PGM), CRN, PUG and vectorial SVG files.
-- Spot saves WEBP, JPG, PNG, TGA, BMP, DDS, PVR3 (ETC1), KTX (ETC1), PKM (ETC1) and PUG files.
+- Spot saves WEBP, JPG, PNG, TGA, BMP, DDS, PVR3 (PVRTC), KTX (ETC1), PKM (ETC1) and PUG files.
 - Spot is self-contained. All libraries are included and amalgamated.
 - Spot is tiny. A couple of source files.
 - Spot is cross-platform.
@@ -31,8 +31,8 @@ Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-
 | PSD files | yes | no |
 | PUG files | yes | yes |
 | PVR2 (PVRTC) files | yes* | no |
-| PVR3 (ETC1) files | yes* | yes* |
-| PVR3 (PVRTC) files | yes* | no |
+| PVR3 (ETC1) files | yes* | no |
+| PVR3 (PVRTC) files | yes* | yes* |
 | SVG files (rasterized) | yes | no |
 | TGA files | yes | yes |
 | WEBP files | yes | yes |
@@ -126,8 +126,11 @@ class image : public std::vector<color>
 
     std::vector<unsigned int>  rgba32() const;
     std::vector<unsigned char> rgbx( unsigned char ) const;
+    std::vector<unsigned char> bgrx( unsigned char ) const;
     std::vector<unsigned char> rgba() const;
+    std::vector<unsigned char> bgra() const;
     std::vector<unsigned char> rgb() const;
+    std::vector<unsigned char> bgr() const;
     std::vector<unsigned char> ya() const;
     std::vector<unsigned char> y() const;
 };
@@ -157,22 +160,29 @@ class image : public std::vector<color>
 ```
 
 ## possible output
-```bash
-22/04/2015  16:32           607.990 collage.bmp
-22/04/2015  16:32           203.264 collage.dds
-22/04/2015  16:32            44.040 collage.jpg
-22/04/2015  16:32           100.900 collage.ktx
-22/04/2015  16:32           100.848 collage.pkm
-22/04/2015  16:32           296.306 collage.png
-22/04/2015  16:32            44.225 collage.pug
-22/04/2015  16:32           100.884 collage.pvr
-22/04/2015  16:32            32.384 collage.webp
-```
-
 ![image](https://raw.github.com/r-lyeh/depot/master/spot_collage.jpg)
+
+```bash
+23/04/2015  21:05           786.486 collage.bmp
+23/04/2015  21:05           262.272 collage.dds
+23/04/2015  21:05            55.018 collage.jpg
+23/04/2015  21:05           131.140 collage.ktx
+23/04/2015  21:05           131.088 collage.pkm
+23/04/2015  21:05           296.619 collage.png
+23/04/2015  21:05            55.227 collage.pug
+23/04/2015  21:05           131.128 collage.pvr
+23/04/2015  21:05            42.272 collage.webp
+```
 
 ## color transfer sample
 ![image](https://raw.github.com/r-lyeh/depot/master/spot_color_transfer.jpg)
+
+## todos
+- clean ups
+- integrate metrics
+- dds/dxt and bc5/6/7
+- better crn handling
+- endianness issues
 
 ## licenses
 - [spot](https://github.com/r-lyeh/spot) (BOOST licensed).
@@ -186,6 +196,7 @@ class image : public std::vector<color>
 - [nanosvg](https://github.com/memononen/nanosvg/) by Mikko Mononen (ZLIB license).
 - [pngrim](https://github.com/fgenesis/pngrim) alpha bleeding algorithm by F-Genesis (Public Domain).
 - [pug](https://github.com/r-lyeh/pug) (Public Domain).
+- [pvrtccompressor](https://bitbucket.org/jthlim/pvrtccompressor/) by Jeffrey Lim (BSD-3 license).
 - [rg_etc1](https://code.google.com/p/rg-etc1/) by Rich Geldreich (ZLIB license).
 - [soil2](https://bitbucket.org/SpartanJ/soil2/) by Martin Lucas Golini and Jonathan Dummer (Public Domain).
 - [stb_image](http://github.com/nothings/stb) by Sean Barrett (Public Domain).
@@ -195,6 +206,8 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.0.3 (2015/04/24)
+  - pvrtc encoder
 - v2.0.2 (2015/04/23)
   - better ktx/pvr3 file support
   - pvrtc decode stream support

@@ -35910,6 +35910,1517 @@ int query_gen_mipmap_capability( void )
 
 #endif
 
+
+//#line 1 "BitScale.cpp"
+
+//#line 1 "BitScale.h"
+#ifndef JTHLIM_BITSCALE_H
+#define JTHLIM_BITSCALE_H
+
+#include <cstdint>
+
+namespace Javelin
+{
+  namespace Data
+  {
+
+	extern const uint8_t BITSCALE_5_TO_8[32];
+	extern const uint8_t BITSCALE_4_TO_8[16];
+	extern const uint8_t BITSCALE_3_TO_8[8];
+	extern const uint8_t BITSCALE_8_TO_5_FLOOR[256];
+	extern const uint8_t BITSCALE_8_TO_4_FLOOR[256];
+	extern const uint8_t BITSCALE_8_TO_3_FLOOR[256];
+	extern const uint8_t BITSCALE_8_TO_5_CEIL[256];
+	extern const uint8_t BITSCALE_8_TO_4_CEIL[256];
+	extern const uint8_t BITSCALE_8_TO_3_CEIL[256];
+
+  } // namespace Data
+} // namespace Javelin
+
+#endif
+
+#ifdef _WIN32
+#define constexpr const
+#endif
+
+constexpr uint8_t Javelin::Data::BITSCALE_5_TO_8[32] = {
+ 0, 8, 16, 24, 32, 41, 49, 57, 65, 74,
+ 82, 90, 98, 106, 115, 123, 131, 139, 148, 156,
+ 164, 172, 180, 189, 197, 205, 213, 222, 230, 238,
+ 246, 255};
+
+constexpr uint8_t Javelin::Data::BITSCALE_4_TO_8[16] = {
+ 0, 17, 34, 51, 68, 85, 102, 119, 136, 153,
+ 170, 187, 204, 221, 238, 255};
+
+constexpr uint8_t Javelin::Data::BITSCALE_3_TO_8[8] = {
+ 0, 36, 72, 109, 145, 182, 218, 255};
+
+constexpr uint8_t Javelin::Data::BITSCALE_8_TO_5_FLOOR[256] = {
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+ 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+ 2, 2, 2, 2, 2, 3, 3, 3, 3, 3,
+ 3, 3, 3, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 5, 5, 5, 5, 5, 5, 5, 5,
+ 6, 6, 6, 6, 6, 6, 6, 6, 7, 7,
+ 7, 7, 7, 7, 7, 7, 8, 8, 8, 8,
+ 8, 8, 8, 8, 8, 9, 9, 9, 9, 9,
+ 9, 9, 9, 10, 10, 10, 10, 10, 10, 10,
+ 10, 11, 11, 11, 11, 11, 11, 11, 11, 12,
+ 12, 12, 12, 12, 12, 12, 12, 13, 13, 13,
+ 13, 13, 13, 13, 13, 13, 14, 14, 14, 14,
+ 14, 14, 14, 14, 15, 15, 15, 15, 15, 15,
+ 15, 15, 16, 16, 16, 16, 16, 16, 16, 16,
+ 17, 17, 17, 17, 17, 17, 17, 17, 17, 18,
+ 18, 18, 18, 18, 18, 18, 18, 19, 19, 19,
+ 19, 19, 19, 19, 19, 20, 20, 20, 20, 20,
+ 20, 20, 20, 21, 21, 21, 21, 21, 21, 21,
+ 21, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+ 23, 23, 23, 23, 23, 23, 23, 23, 24, 24,
+ 24, 24, 24, 24, 24, 24, 25, 25, 25, 25,
+ 25, 25, 25, 25, 26, 26, 26, 26, 26, 26,
+ 26, 26, 26, 27, 27, 27, 27, 27, 27, 27,
+ 27, 28, 28, 28, 28, 28, 28, 28, 28, 29,
+ 29, 29, 29, 29, 29, 29, 29, 30, 30, 30,
+ 30, 30, 30, 30, 30, 31};
+
+constexpr uint8_t Javelin::Data::BITSCALE_8_TO_4_FLOOR[256] = {
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 7,
+ 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+ 7, 7, 7, 7, 7, 7, 8, 8, 8, 8,
+ 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+ 8, 8, 8, 9, 9, 9, 9, 9, 9, 9,
+ 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+ 10, 10, 10, 10, 10, 10, 10, 11, 11, 11,
+ 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+ 11, 11, 11, 11, 12, 12, 12, 12, 12, 12,
+ 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+ 12, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+ 13, 13, 13, 13, 13, 13, 13, 13, 14, 14,
+ 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+ 14, 14, 14, 14, 14, 15};
+
+constexpr uint8_t Javelin::Data::BITSCALE_8_TO_3_FLOOR[256] = {
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 7};
+
+constexpr uint8_t Javelin::Data::BITSCALE_8_TO_5_CEIL[256] = {
+ 0, 1, 1, 1, 1, 1, 1, 1, 1, 2,
+ 2, 2, 2, 2, 2, 2, 2, 3, 3, 3,
+ 3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
+ 4, 4, 4, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 6, 6, 6, 6, 6, 6, 6, 6,
+ 7, 7, 7, 7, 7, 7, 7, 7, 8, 8,
+ 8, 8, 8, 8, 8, 8, 9, 9, 9, 9,
+ 9, 9, 9, 9, 9, 10, 10, 10, 10, 10,
+ 10, 10, 10, 11, 11, 11, 11, 11, 11, 11,
+ 11, 12, 12, 12, 12, 12, 12, 12, 12, 13,
+ 13, 13, 13, 13, 13, 13, 13, 14, 14, 14,
+ 14, 14, 14, 14, 14, 14, 15, 15, 15, 15,
+ 15, 15, 15, 15, 16, 16, 16, 16, 16, 16,
+ 16, 16, 17, 17, 17, 17, 17, 17, 17, 17,
+ 18, 18, 18, 18, 18, 18, 18, 18, 18, 19,
+ 19, 19, 19, 19, 19, 19, 19, 20, 20, 20,
+ 20, 20, 20, 20, 20, 21, 21, 21, 21, 21,
+ 21, 21, 21, 22, 22, 22, 22, 22, 22, 22,
+ 22, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+ 24, 24, 24, 24, 24, 24, 24, 24, 25, 25,
+ 25, 25, 25, 25, 25, 25, 26, 26, 26, 26,
+ 26, 26, 26, 26, 27, 27, 27, 27, 27, 27,
+ 27, 27, 27, 28, 28, 28, 28, 28, 28, 28,
+ 28, 29, 29, 29, 29, 29, 29, 29, 29, 30,
+ 30, 30, 30, 30, 30, 30, 30, 31, 31, 31,
+ 31, 31, 31, 31, 31, 31};
+
+constexpr uint8_t Javelin::Data::BITSCALE_8_TO_4_CEIL[256] = {
+ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 7, 7, 7, 7, 7, 7, 7,
+ 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+ 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+ 8, 8, 8, 8, 8, 8, 8, 9, 9, 9,
+ 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+ 9, 9, 9, 9, 10, 10, 10, 10, 10, 10,
+ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+ 10, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+ 11, 11, 11, 11, 11, 11, 11, 11, 12, 12,
+ 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+ 12, 12, 12, 12, 12, 13, 13, 13, 13, 13,
+ 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+ 13, 13, 14, 14, 14, 14, 14, 14, 14, 14,
+ 14, 14, 14, 14, 14, 14, 14, 14, 14, 15,
+ 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+ 15, 15, 15, 15, 15, 15};
+
+constexpr uint8_t Javelin::Data::BITSCALE_8_TO_3_CEIL[256] = {
+ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 7,
+ 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+ 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+ 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+ 7, 7, 7, 7, 7, 7};
+
+
+//#line 1 "MortonTable.cpp"
+
+//#line 1 "MortonTable.h"
+#ifndef JTHLIM_MORTONTABLE_H
+#define JTHLIM_MORTONTABLE_H
+
+namespace Javelin
+{
+	namespace Data
+	{
+
+		extern const unsigned short MORTON_TABLE[256];
+
+	} // namespace Data
+} // namespace Javelin
+
+#endif
+
+#ifdef _WIN32
+#define constexpr const
+#endif
+
+constexpr unsigned short Javelin::Data::MORTON_TABLE[256] =
+{
+	0x0000, 0x0001, 0x0004, 0x0005, 0x0010, 0x0011, 0x0014, 0x0015,
+	0x0040, 0x0041, 0x0044, 0x0045, 0x0050, 0x0051, 0x0054, 0x0055,
+	0x0100, 0x0101, 0x0104, 0x0105, 0x0110, 0x0111, 0x0114, 0x0115,
+	0x0140, 0x0141, 0x0144, 0x0145, 0x0150, 0x0151, 0x0154, 0x0155,
+	0x0400, 0x0401, 0x0404, 0x0405, 0x0410, 0x0411, 0x0414, 0x0415,
+	0x0440, 0x0441, 0x0444, 0x0445, 0x0450, 0x0451, 0x0454, 0x0455,
+	0x0500, 0x0501, 0x0504, 0x0505, 0x0510, 0x0511, 0x0514, 0x0515,
+	0x0540, 0x0541, 0x0544, 0x0545, 0x0550, 0x0551, 0x0554, 0x0555,
+	0x1000, 0x1001, 0x1004, 0x1005, 0x1010, 0x1011, 0x1014, 0x1015,
+	0x1040, 0x1041, 0x1044, 0x1045, 0x1050, 0x1051, 0x1054, 0x1055,
+	0x1100, 0x1101, 0x1104, 0x1105, 0x1110, 0x1111, 0x1114, 0x1115,
+	0x1140, 0x1141, 0x1144, 0x1145, 0x1150, 0x1151, 0x1154, 0x1155,
+	0x1400, 0x1401, 0x1404, 0x1405, 0x1410, 0x1411, 0x1414, 0x1415,
+	0x1440, 0x1441, 0x1444, 0x1445, 0x1450, 0x1451, 0x1454, 0x1455,
+	0x1500, 0x1501, 0x1504, 0x1505, 0x1510, 0x1511, 0x1514, 0x1515,
+	0x1540, 0x1541, 0x1544, 0x1545, 0x1550, 0x1551, 0x1554, 0x1555,
+	0x4000, 0x4001, 0x4004, 0x4005, 0x4010, 0x4011, 0x4014, 0x4015,
+	0x4040, 0x4041, 0x4044, 0x4045, 0x4050, 0x4051, 0x4054, 0x4055,
+	0x4100, 0x4101, 0x4104, 0x4105, 0x4110, 0x4111, 0x4114, 0x4115,
+	0x4140, 0x4141, 0x4144, 0x4145, 0x4150, 0x4151, 0x4154, 0x4155,
+	0x4400, 0x4401, 0x4404, 0x4405, 0x4410, 0x4411, 0x4414, 0x4415,
+	0x4440, 0x4441, 0x4444, 0x4445, 0x4450, 0x4451, 0x4454, 0x4455,
+	0x4500, 0x4501, 0x4504, 0x4505, 0x4510, 0x4511, 0x4514, 0x4515,
+	0x4540, 0x4541, 0x4544, 0x4545, 0x4550, 0x4551, 0x4554, 0x4555,
+	0x5000, 0x5001, 0x5004, 0x5005, 0x5010, 0x5011, 0x5014, 0x5015,
+	0x5040, 0x5041, 0x5044, 0x5045, 0x5050, 0x5051, 0x5054, 0x5055,
+	0x5100, 0x5101, 0x5104, 0x5105, 0x5110, 0x5111, 0x5114, 0x5115,
+	0x5140, 0x5141, 0x5144, 0x5145, 0x5150, 0x5151, 0x5154, 0x5155,
+	0x5400, 0x5401, 0x5404, 0x5405, 0x5410, 0x5411, 0x5414, 0x5415,
+	0x5440, 0x5441, 0x5444, 0x5445, 0x5450, 0x5451, 0x5454, 0x5455,
+	0x5500, 0x5501, 0x5504, 0x5505, 0x5510, 0x5511, 0x5514, 0x5515,
+	0x5540, 0x5541, 0x5544, 0x5545, 0x5550, 0x5551, 0x5554, 0x5555
+};
+
+
+//#line 1 "PvrTcDecoder.cpp"
+
+//#line 1 "PvrTcDecoder.h"
+#ifndef JTHLIM_PVRTCDECODER_H
+#define JTHLIM_PVRTCDECODER_H
+
+
+//#line 1 "Point2.h"
+#ifndef JTHLIM_POINT2_H
+#define JTHLIM_POINT2_H
+
+namespace Javelin {
+
+template<typename T>
+class Point2 {
+public:
+	T x;
+	T y;
+
+	Point2(int a, int b)
+		: x(a)
+		, y(b) {
+	}
+};
+
+}
+
+#endif
+
+
+//#line 1 "ColorRgba.h"
+#ifndef JTHLIM_COLORRGBA_H
+#define JTHLIM_COLORRGBA_H
+
+namespace Javelin {
+
+template<typename T>
+class ColorRgb {
+public:
+	T b;
+	T g;
+	T r;
+
+	ColorRgb()
+		: r(0)
+		, g(0)
+		, b(0) {
+	}
+
+	ColorRgb(T red, T green, T blue)
+		: r(red)
+		, g(green)
+		, b(blue) {
+	}
+
+	ColorRgb(const ColorRgb<T> &x)
+		: r(x.r)
+		, g(x.g)
+		, b(x.b) {
+	}
+
+	ColorRgb<int> operator *(int x) {
+		return ColorRgb<int>(r * x, g * x, b * x);
+	}
+
+	ColorRgb<int> operator +(const ColorRgb<T> &x) const {
+		return ColorRgb<int>(r + (int)x.r, g + (int)x.g, b + (int)x.b);
+	}
+
+	ColorRgb<int> operator -(const ColorRgb<T> &x) const {
+		return ColorRgb<int>(r - (int)x.r, g - (int)x.g, b - (int)x.b);
+	}
+
+	int operator %(const ColorRgb<T> &x) const {
+		return r * (int)x.r + g * (int)x.g + b * (int)x.b;
+	}
+
+	bool operator ==(const ColorRgb<T> &x) const {
+		return r == x.r && g == x.g && b == x.b;
+	}
+
+	bool operator !=(const ColorRgb<T> &x) const {
+		return r != x.r || g != x.g || b != x.b;
+	}
+
+	void SetMin(const ColorRgb<T> &x) {
+		if (x.r < r) {
+			r = x.r;
+		}
+		if (x.g < g) {
+			g = x.g;
+		}
+		if (x.b < b) {
+			b = x.b;
+		}
+	}
+
+	void SetMax(const ColorRgb<T> &x) {
+		if (x.r > r) {
+			r = x.r;
+		}
+		if (x.g > g) {
+			g = x.g;
+		}
+		if (x.b > b) {
+			b = x.b;
+		}
+	}
+};
+
+template<typename T>
+class ColorRgba : public ColorRgb<T> {
+public:
+	T a;
+
+	ColorRgba() :
+		a(0) {
+	}
+
+	ColorRgba(T red, T green, T blue, T alpha)
+		: ColorRgb<T>(red, green, blue)
+		, a(alpha) {
+	}
+
+	ColorRgba(const ColorRgba<T> &x)
+		: ColorRgb<T>(x.r, x.g, x.b)
+		, a(x.a) {
+	}
+
+	ColorRgba<int> operator *(int x) {
+		return ColorRgba<T>(ColorRgb<T>::r * x,
+							ColorRgb<T>::g * x,
+							ColorRgb<T>::b * x,
+							a * x);
+	}
+
+	ColorRgba<int> operator +(const ColorRgba<T> &x) {
+		return ColorRgba<T>(ColorRgb<T>::r + (int)x.r,
+							ColorRgb<T>::g + (int)x.g,
+							ColorRgb<T>::b + (int)x.b,
+							a + (int)x.a);
+	}
+
+	ColorRgba<int> operator -(const ColorRgba<T> &x) {
+		return ColorRgba<T>(ColorRgb<T>::r - (int)x.r,
+							ColorRgb<T>::g - (int)x.g,
+							ColorRgb<T>::b - (int)x.b,
+							a - (int)x.a);
+	}
+
+	int operator %(const ColorRgba<T> &x) {
+		return ColorRgb<T>::r * (int)x.r +
+			   ColorRgb<T>::g * (int)x.g +
+			   ColorRgb<T>::b * (int)x.b +
+			   a * (int)x.a;
+	}
+
+	bool operator ==(const ColorRgba<T> &x) {
+		return ColorRgb<T>::r == x.r && ColorRgb<T>::g == x.g &&
+			   ColorRgb<T>::b == x.b && a == x.a;
+	}
+
+	bool operator !=(const ColorRgba<T> &x) {
+		return ColorRgb<T>::r != x.r || ColorRgb<T>::g != x.g ||
+			   ColorRgb<T>::b != x.b || a != x.a;
+	}
+
+	void SetMin(const ColorRgba<T> &x) {
+		ColorRgb<T>::SetMin(x);
+		if (x.a < a) {
+			a = x.a;
+		}
+	}
+
+	void SetMax(const ColorRgba<T> &x) {
+		ColorRgb<T>::SetMax(x);
+		if (x.a > a) {
+			a = x.a;
+		}
+	}
+};
+
+}
+
+#endif
+
+namespace Javelin
+{
+
+	class PvrTcDecoder
+	{
+	public:
+		static void DecodeRgb4Bpp(ColorRgb<unsigned char>* result, const Point2<int>& size, const void* data);
+		static void DecodeRgba4Bpp(ColorRgba<unsigned char>* result, const Point2<int>& size, const void* data);
+
+	private:
+		static unsigned GetMortonNumber(int x, int y);
+	};
+
+}
+
+#endif
+
+
+//#line 1 "PvrTcPacket.h"
+//
+// Modulation data specifies weightings of colorA to colorB for each pixel
+//
+// For mode = 0
+//	00: 0/8
+//  01: 3/8
+//  10: 5/8
+//  11: 8/8
+//
+// For mode = 1
+//  00: 0/8
+//  01: 4/8
+//  10: 4/8 with alpha punchthrough
+//  11: 8/8
+//
+// For colorIsOpaque=0
+//  3 bits A
+//  4 bits R
+//  4 bits G
+//  3/4 bits B
+//
+// For colorIsOpaque=1
+//  5 bits R
+//  5 bits G
+//  4/5 bits B
+//
+
+#ifndef JTHLIM_PVRTCPACKET_H
+#define JTHLIM_PVRTCPACKET_H
+
+namespace Javelin
+{
+
+	struct PvrTcPacket
+	{
+		unsigned int    modulationData;
+		unsigned        usePunchthroughAlpha : 1;
+		unsigned        colorA          	 : 14;
+		unsigned        colorAIsOpaque  	 : 1;
+		unsigned        colorB        		 : 15;
+		unsigned        colorBIsOpaque  	 : 1;
+
+		ColorRgb<int> GetColorRgbA() const;
+		ColorRgb<int> GetColorRgbB() const;
+		ColorRgba<int> GetColorRgbaA() const;
+		ColorRgba<int> GetColorRgbaB() const;
+
+		void SetColorA(const ColorRgb<unsigned char>& c);
+		void SetColorB(const ColorRgb<unsigned char>& c);
+
+		void SetColorA(const ColorRgba<unsigned char>& c);
+		void SetColorB(const ColorRgba<unsigned char>& c);
+
+		static const unsigned char BILINEAR_FACTORS[16][4];
+		static const unsigned char WEIGHTS[8][4];
+	};
+
+} // namespace Javelin
+
+#endif
+
+#include <assert.h>
+
+using namespace Javelin;
+using Data::MORTON_TABLE;
+
+inline unsigned PvrTcDecoder::GetMortonNumber(int x, int y)
+{
+	return MORTON_TABLE[x >> 8] << 17 | MORTON_TABLE[y >> 8] << 16 | MORTON_TABLE[x & 0xFF] << 1 | MORTON_TABLE[y & 0xFF];
+}
+
+void PvrTcDecoder::DecodeRgb4Bpp(ColorRgb<unsigned char>* result, const Point2<int>& size, const void* data)
+{
+	assert(size.x == size.y);
+
+	const int blocks = size.x / 4;
+	const int blockMask = blocks-1;
+	const PvrTcPacket* packets = static_cast<const PvrTcPacket*>(data);
+
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			const PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+
+			unsigned mod = packet->modulationData;
+			const unsigned char (*weights)[4] = PvrTcPacket::WEIGHTS + 4*packet->usePunchthroughAlpha;
+			const unsigned char (*factor)[4] = PvrTcPacket::BILINEAR_FACTORS;
+
+			for(int py = 0; py < 4; ++py)
+			{
+				const int yOffset = (py < 2) ? -1 : 0;
+				const int y0 = (y + yOffset) & blockMask;
+				const int y1 = (y0+1) & blockMask;
+
+				for(int px = 0; px < 4; ++px)
+				{
+					const int xOffset = (px < 2) ? -1 : 0;
+					const int x0 = (x + xOffset) & blockMask;
+					const int x1 = (x0+1) & blockMask;
+
+					const PvrTcPacket* p0 = packets + GetMortonNumber(x0, y0);
+					const PvrTcPacket* p1 = packets + GetMortonNumber(x1, y0);
+					const PvrTcPacket* p2 = packets + GetMortonNumber(x0, y1);
+					const PvrTcPacket* p3 = packets + GetMortonNumber(x1, y1);
+
+					ColorRgb<int> ca = p0->GetColorRgbA() * (*factor)[0] +
+									   p1->GetColorRgbA() * (*factor)[1] +
+									   p2->GetColorRgbA() * (*factor)[2] +
+									   p3->GetColorRgbA() * (*factor)[3];
+
+					ColorRgb<int> cb = p0->GetColorRgbB() * (*factor)[0] +
+									   p1->GetColorRgbB() * (*factor)[1] +
+									   p2->GetColorRgbB() * (*factor)[2] +
+									   p3->GetColorRgbB() * (*factor)[3];
+
+					const unsigned char* w = weights[mod&3];
+					ColorRgb<unsigned char> c;
+					c.r = (ca.r * w[0] + cb.r * w[1]) >> 7;
+					c.g = (ca.g * w[0] + cb.g * w[1]) >> 7;
+					c.b = (ca.b * w[0] + cb.b * w[1]) >> 7;
+
+					result[(py+y*4)*size.x + (px+x*4)] = c;
+					mod >>= 2;
+					factor++;
+				}
+			}
+		}
+	}
+}
+
+void PvrTcDecoder::DecodeRgba4Bpp(ColorRgba<unsigned char>* result, const Point2<int>& size, const void* data)
+{
+	assert(size.x == size.y);
+
+	const int blocks = size.x / 4;
+	const int blockMask = blocks-1;
+	const PvrTcPacket* packets = static_cast<const PvrTcPacket*>(data);
+
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			const PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+
+			unsigned mod = packet->modulationData;
+			const unsigned char (*weights)[4] = PvrTcPacket::WEIGHTS + 4*packet->usePunchthroughAlpha;
+			const unsigned char (*factor)[4] = PvrTcPacket::BILINEAR_FACTORS;
+
+			for(int py = 0; py < 4; ++py)
+			{
+				const int yOffset = (py < 2) ? -1 : 0;
+				const int y0 = (y + yOffset) & blockMask;
+				const int y1 = (y0+1) & blockMask;
+
+				for(int px = 0; px < 4; ++px)
+				{
+					const int xOffset = (px < 2) ? -1 : 0;
+					const int x0 = (x + xOffset) & blockMask;
+					const int x1 = (x0+1) & blockMask;
+
+					const PvrTcPacket* p0 = packets + GetMortonNumber(x0, y0);
+					const PvrTcPacket* p1 = packets + GetMortonNumber(x1, y0);
+					const PvrTcPacket* p2 = packets + GetMortonNumber(x0, y1);
+					const PvrTcPacket* p3 = packets + GetMortonNumber(x1, y1);
+
+					ColorRgba<int> ca = p0->GetColorRgbaA() * (*factor)[0] +
+									   	p1->GetColorRgbaA() * (*factor)[1] +
+									   	p2->GetColorRgbaA() * (*factor)[2] +
+										p3->GetColorRgbaA() * (*factor)[3];
+
+					ColorRgba<int> cb = p0->GetColorRgbaB() * (*factor)[0] +
+										p1->GetColorRgbaB() * (*factor)[1] +
+										p2->GetColorRgbaB() * (*factor)[2] +
+										p3->GetColorRgbaB() * (*factor)[3];
+
+					const unsigned char* w = weights[mod&3];
+					ColorRgba<unsigned char> c;
+					c.r = (ca.r * w[0] + cb.r * w[1]) >> 7;
+					c.g = (ca.g * w[0] + cb.g * w[1]) >> 7;
+					c.b = (ca.b * w[0] + cb.b * w[1]) >> 7;
+					c.a = (ca.a * w[2] + cb.a * w[3]) >> 7;
+
+					result[(py+y*4)*size.x + (px+x*4)] = c;
+					mod >>= 2;
+					factor++;
+				}
+			}
+		}
+	}
+}
+
+
+//#line 1 "PvrTcEncoder.cpp"
+
+//#line 1 "PvrTcEncoder.h"
+#ifndef JTHLIM_PVRTCENCODER_H
+#define JTHLIM_PVRTCENCODER_H
+
+namespace Javelin
+{
+
+	class AlphaBitmap;
+	class RgbBitmap;
+	class RgbaBitmap;
+
+	class PvrTcEncoder
+	{
+	public:
+		// Result must be large enough for bitmap.GetArea()/4 bytes
+		static void EncodeAlpha2Bpp(void* result, const AlphaBitmap& bitmap);
+
+		// Result must be large enough for bitmap.GetArea()/2 bytes
+		static void EncodeAlpha4Bpp(void* result, const AlphaBitmap& bitmap);
+
+		// Result must be large enough for bitmap.GetArea()/2 bytes
+		static void EncodeRgb4Bpp(void* result, const RgbBitmap& bitmap);
+
+		// Result must be large enough for bitmap.GetArea()/2 bytes
+		static void EncodeRgb4Bpp(void* result, const RgbaBitmap& bitmap);
+
+		// Result must be large enough for bitmap.GetArea()/2 bytes
+		static void EncodeRgba4Bpp(void* result, const RgbaBitmap& bitmap);
+
+	private:
+		static unsigned GetMortonNumber(int x, int y);
+	};
+
+}
+
+#endif
+
+
+//#line 1 "AlphaBitmap.h"
+#ifndef JTHLIM_ALPHABITMAP_H
+#define JTHLIM_ALPHABITMAP_H
+
+
+//#line 1 "Bitmap.h"
+#ifndef JTHLIM_BITMAP_H
+#define JTHLIM_BITMAP_H
+
+namespace Javelin {
+
+class Bitmap {
+public:
+	int width;
+	int height;
+	unsigned char *data;
+
+	Bitmap(int w, int h, int bytesPerPixel)
+		: width(w)
+		, height(h)
+		, data(new unsigned char[width * height * bytesPerPixel]) {
+	}
+
+	virtual ~Bitmap() {
+		delete [] data;
+	}
+
+	Point2<int> GetSize() const { return Point2<int>(width, height); }
+
+	int GetArea() const { return width * height; }
+
+	int GetBitmapWidth() const { return width; }
+
+	int GetBitmapHeight() const { return height; }
+
+	const unsigned char *GetRawData() const { return data; }
+};
+
+}
+
+#endif
+
+namespace Javelin {
+
+class AlphaBitmap : public Bitmap {
+public:
+	AlphaBitmap(int w, int h)
+		: Bitmap(w, h, 1) {
+	}
+
+	const unsigned char *GetData() const { return data; }
+
+	unsigned char *GetData() { return data; }
+};
+
+}
+
+#endif
+
+
+//#line 1 "RgbBitmap.h"
+#ifndef JTHLIM_RGBBITMAP_H
+#define JTHLIM_RGBBITMAP_H
+
+namespace Javelin {
+
+class RgbBitmap : public Bitmap {
+public:
+	RgbBitmap(int w, int h)
+		: Bitmap(w, h, 3) {
+	}
+
+	const ColorRgb<unsigned char> *GetData() const {
+		return reinterpret_cast<ColorRgb<unsigned char> *>(data);
+	}
+
+	ColorRgb<unsigned char> *GetData() {
+		return reinterpret_cast<ColorRgb<unsigned char> *>(data);
+	}
+};
+
+}
+
+#endif
+
+
+//#line 1 "RgbaBitmap.h"
+#ifndef JTHLIM_RGBABITMAP_H
+#define JTHLIM_RGBABITMAP_H
+
+namespace Javelin {
+
+class RgbaBitmap : public Bitmap {
+public:
+	RgbaBitmap(int w, int h)
+		: Bitmap(w, h, 4) {
+	}
+
+	const ColorRgba<unsigned char> *GetData() const {
+		return reinterpret_cast<ColorRgba<unsigned char> *>(data);
+	}
+
+	ColorRgba<unsigned char> *GetData() {
+		return reinterpret_cast<ColorRgba<unsigned char> *>(data);
+	}
+};
+
+}
+
+#endif
+
+
+//#line 1 "BitUtility.h"
+#ifndef JTHLIM_BITUTILITY_H
+#define JTHLIM_BITUTILITY_H
+
+namespace Javelin {
+
+class BitUtility {
+public:
+	static bool IsPowerOf2(unsigned int x) {
+		return (x & (x - 1)) == 0;
+	}
+
+	static unsigned int RotateRight(unsigned int value, unsigned int shift) {
+		if ((shift &= sizeof(value) * 8 - 1) == 0) {
+			return value;
+		}
+		return (value >> shift) | (value << (sizeof(value) * 8 - shift));
+	}
+};
+
+}
+
+#endif
+
+
+//#line 1 "Interval.h"
+#ifndef JTHLIM_INTERVAL_H
+#define JTHLIM_INTERVAL_H
+
+namespace Javelin {
+
+template<typename T>
+class Interval {
+public:
+	T min;
+	T max;
+
+	Interval() {
+	}
+
+	Interval<T> &operator|=(const T &x) {
+		min.SetMin(x);
+		max.SetMax(x);
+		return *this;
+	}
+};
+
+}
+
+#endif
+
+#include <assert.h>
+#include <math.h>
+#include <stdint.h>
+
+using namespace Javelin;
+using Data::MORTON_TABLE;
+
+static const unsigned char MODULATION_LUT[16] =
+{
+	0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3
+};
+
+inline unsigned PvrTcEncoder::GetMortonNumber(int x, int y)
+{
+	return MORTON_TABLE[x >> 8] << 17 | MORTON_TABLE[y >> 8] << 16 | MORTON_TABLE[x & 0xFF] << 1 | MORTON_TABLE[y & 0xFF];
+}
+
+void PvrTcEncoder::EncodeAlpha2Bpp(void* result, const AlphaBitmap& bitmap)
+{
+	int size = bitmap.GetBitmapWidth();
+	assert(size == bitmap.GetBitmapHeight());
+	assert(BitUtility::IsPowerOf2(size));
+
+	// Blocks in each dimension.
+	int xBlocks = size/8;
+	int yBlocks = size/4;
+
+	const unsigned char* bitmapData = bitmap.GetRawData();
+
+	PvrTcPacket* packets = static_cast<PvrTcPacket*>(result);
+	for(int y = 0; y < yBlocks; ++y)
+	{
+		for(int x = 0; x < xBlocks; ++x)
+		{
+			PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+			packet->usePunchthroughAlpha = 0;
+			packet->colorAIsOpaque = 0;
+			packet->colorA = 0x7ff;		// White, with 0 alpha
+			packet->colorBIsOpaque = 1;
+			packet->colorB = 0x7fff;	// White with full alpha
+
+			const unsigned char* blockBitmapData = &bitmapData[y*4*size + x*8];
+
+			uint32_t modulationData = 0;
+			for(int py = 0; py < 4; ++py)
+			{
+				const unsigned char* rowBitmapData = blockBitmapData;
+				for(int px = 0; px < 8; ++px)
+				{
+					unsigned char pixel = *rowBitmapData++;
+					modulationData = BitUtility::RotateRight(modulationData | (pixel >> 7), 1);
+				}
+				blockBitmapData += size;
+			}
+			packet->modulationData = modulationData;
+		}
+	}
+}
+
+void PvrTcEncoder::EncodeAlpha4Bpp(void* result, const AlphaBitmap& bitmap)
+{
+	int size = bitmap.GetBitmapWidth();
+	assert(size == bitmap.GetBitmapHeight());
+	assert(BitUtility::IsPowerOf2(size));
+
+	// Blocks in each dimension.
+	int blocks = size/4;
+
+	const unsigned char* bitmapData = bitmap.GetRawData();
+
+	PvrTcPacket* packets = static_cast<PvrTcPacket*>(result);
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+			packet->usePunchthroughAlpha = 0;
+			packet->colorAIsOpaque = 0;
+			packet->colorA = 0x7ff;		// White, with 0 alpha
+			packet->colorBIsOpaque = 1;
+			packet->colorB = 0x7fff;	// White with full alpha
+
+			const unsigned char* blockBitmapData = &bitmapData[(y*size + x)*4];
+
+			uint32_t modulationData = 0;
+			for(int py = 0; py < 4; ++py)
+			{
+				const unsigned char* rowBitmapData = blockBitmapData;
+				for(int px = 0; px < 4; ++px)
+				{
+					unsigned char pixel = *rowBitmapData++;
+					modulationData = BitUtility::RotateRight(modulationData | MODULATION_LUT[pixel>>4], 2);
+				}
+				blockBitmapData += size;
+			}
+			packet->modulationData = modulationData;
+		}
+	}
+}
+
+typedef Interval<ColorRgb<unsigned char>> ColorRgbBoundingBox;
+
+static void CalculateBoundingBox(ColorRgbBoundingBox& cbb, const RgbBitmap& bitmap, int blockX, int blockY)
+{
+	int size = bitmap.GetBitmapWidth();
+	const ColorRgb<unsigned char>* data = bitmap.GetData() + blockY * 4 * size + blockX * 4;
+
+	cbb.min = data[0];
+	cbb.max = data[0];
+	cbb |= data[1];
+	cbb |= data[2];
+	cbb |= data[3];
+
+	cbb |= data[size];
+	cbb |= data[size+1];
+	cbb |= data[size+2];
+	cbb |= data[size+3];
+
+	cbb |= data[2*size];
+	cbb |= data[2*size+1];
+	cbb |= data[2*size+2];
+	cbb |= data[2*size+3];
+
+	cbb |= data[3*size];
+	cbb |= data[3*size+1];
+	cbb |= data[3*size+2];
+	cbb |= data[3*size+3];
+}
+
+void PvrTcEncoder::EncodeRgb4Bpp(void* result, const RgbBitmap& bitmap)
+{
+	assert(bitmap.GetBitmapWidth() == bitmap.GetBitmapHeight());
+	assert(BitUtility::IsPowerOf2(bitmap.GetBitmapWidth()));
+	const int size = bitmap.GetBitmapWidth();
+	const int blocks = size / 4;
+	const int blockMask = blocks-1;
+
+	PvrTcPacket* packets = static_cast<PvrTcPacket*>(result);
+
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			ColorRgbBoundingBox cbb;
+			CalculateBoundingBox(cbb, bitmap, x, y);
+			PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+			packet->usePunchthroughAlpha = 0;
+			packet->SetColorA(cbb.min);
+			packet->SetColorB(cbb.max);
+		}
+	}
+
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			const unsigned char (*factor)[4] = PvrTcPacket::BILINEAR_FACTORS;
+			const ColorRgb<unsigned char>* data = bitmap.GetData() + y * 4 * size + x * 4;
+
+			uint32_t modulationData = 0;
+
+			for(int py = 0; py < 4; ++py)
+			{
+				const int yOffset = (py < 2) ? -1 : 0;
+				const int y0 = (y + yOffset) & blockMask;
+				const int y1 = (y0+1) & blockMask;
+
+				for(int px = 0; px < 4; ++px)
+				{
+					const int xOffset = (px < 2) ? -1 : 0;
+					const int x0 = (x + xOffset) & blockMask;
+					const int x1 = (x0+1) & blockMask;
+
+					const PvrTcPacket* p0 = packets + GetMortonNumber(x0, y0);
+					const PvrTcPacket* p1 = packets + GetMortonNumber(x1, y0);
+					const PvrTcPacket* p2 = packets + GetMortonNumber(x0, y1);
+					const PvrTcPacket* p3 = packets + GetMortonNumber(x1, y1);
+
+					ColorRgb<int> ca = p0->GetColorRgbA() * (*factor)[0] +
+									   p1->GetColorRgbA() * (*factor)[1] +
+									   p2->GetColorRgbA() * (*factor)[2] +
+									   p3->GetColorRgbA() * (*factor)[3];
+
+					ColorRgb<int> cb = p0->GetColorRgbB() * (*factor)[0] +
+									   p1->GetColorRgbB() * (*factor)[1] +
+									   p2->GetColorRgbB() * (*factor)[2] +
+									   p3->GetColorRgbB() * (*factor)[3];
+
+					const ColorRgb<unsigned char>& pixel = data[py*size + px];
+					ColorRgb<int> d = cb - ca;
+					ColorRgb<int> p{pixel.r*16, pixel.g*16, pixel.b*16};
+					ColorRgb<int> v = p - ca;
+
+					// PVRTC uses weightings of 0, 3/8, 5/8 and 1
+					// The boundaries for these are 3/16, 1/2 (=8/16), 13/16
+					int projection = (v % d) * 16;
+					int lengthSquared = d % d;
+					if(projection > 3*lengthSquared) modulationData++;
+					if(projection > 8*lengthSquared) modulationData++;
+					if(projection > 13*lengthSquared) modulationData++;
+
+					modulationData = BitUtility::RotateRight(modulationData, 2);
+
+					factor++;
+				}
+			}
+
+			PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+			packet->modulationData = modulationData;
+		}
+	}
+}
+
+static void CalculateBoundingBox(ColorRgbBoundingBox& cbb, const RgbaBitmap& bitmap, int blockX, int blockY)
+{
+	int size = bitmap.GetBitmapWidth();
+	const ColorRgba<unsigned char>* data = bitmap.GetData() + blockY * 4 * size + blockX * 4;
+
+	cbb.min = data[0];
+	cbb.max = data[0];
+
+	cbb |= data[1];
+	cbb |= data[2];
+	cbb |= data[3];
+
+	cbb |= data[size];
+	cbb |= data[size+1];
+	cbb |= data[size+2];
+	cbb |= data[size+3];
+
+	cbb |= data[2*size];
+	cbb |= data[2*size+1];
+	cbb |= data[2*size+2];
+	cbb |= data[2*size+3];
+
+	cbb |= data[3*size];
+	cbb |= data[3*size+1];
+	cbb |= data[3*size+2];
+	cbb |= data[3*size+3];
+}
+
+void PvrTcEncoder::EncodeRgb4Bpp(void* result, const RgbaBitmap& bitmap)
+{
+	assert(bitmap.GetBitmapWidth() == bitmap.GetBitmapHeight());
+	assert(BitUtility::IsPowerOf2(bitmap.GetBitmapWidth()));
+	const int size = bitmap.GetBitmapWidth();
+	const int blocks = size / 4;
+	const int blockMask = blocks-1;
+
+	PvrTcPacket* packets = static_cast<PvrTcPacket*>(result);
+
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			ColorRgbBoundingBox cbb;
+			CalculateBoundingBox(cbb, bitmap, x, y);
+			PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+			packet->usePunchthroughAlpha = 0;
+			packet->SetColorA(cbb.min);
+			packet->SetColorB(cbb.max);
+		}
+	}
+
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			const unsigned char (*factor)[4] = PvrTcPacket::BILINEAR_FACTORS;
+			const ColorRgba<unsigned char>* data = bitmap.GetData() + y * 4 * size + x * 4;
+
+			uint32_t modulationData = 0;
+
+			for(int py = 0; py < 4; ++py)
+			{
+				const int yOffset = (py < 2) ? -1 : 0;
+				const int y0 = (y + yOffset) & blockMask;
+				const int y1 = (y0+1) & blockMask;
+
+				for(int px = 0; px < 4; ++px)
+				{
+					const int xOffset = (px < 2) ? -1 : 0;
+					const int x0 = (x + xOffset) & blockMask;
+					const int x1 = (x0+1) & blockMask;
+
+					const PvrTcPacket* p0 = packets + GetMortonNumber(x0, y0);
+					const PvrTcPacket* p1 = packets + GetMortonNumber(x1, y0);
+					const PvrTcPacket* p2 = packets + GetMortonNumber(x0, y1);
+					const PvrTcPacket* p3 = packets + GetMortonNumber(x1, y1);
+
+					ColorRgb<int> ca = p0->GetColorRgbA() * (*factor)[0] +
+									   p1->GetColorRgbA() * (*factor)[1] +
+									   p2->GetColorRgbA() * (*factor)[2] +
+									   p3->GetColorRgbA() * (*factor)[3];
+
+					ColorRgb<int> cb = p0->GetColorRgbB() * (*factor)[0] +
+									   p1->GetColorRgbB() * (*factor)[1] +
+									   p2->GetColorRgbB() * (*factor)[2] +
+									   p3->GetColorRgbB() * (*factor)[3];
+
+					const ColorRgb<unsigned char>& pixel = data[py*size + px];
+					ColorRgb<int> d = cb - ca;
+					ColorRgb<int> p{pixel.r*16, pixel.g*16, pixel.b*16};
+					ColorRgb<int> v = p - ca;
+
+					// PVRTC uses weightings of 0, 3/8, 5/8 and 1
+					// The boundaries for these are 3/16, 1/2 (=8/16), 13/16
+					int projection = (v % d) * 16;
+					int lengthSquared = d % d;
+					if(projection > 3*lengthSquared) modulationData++;
+					if(projection > 8*lengthSquared) modulationData++;
+					if(projection > 13*lengthSquared) modulationData++;
+
+					modulationData = BitUtility::RotateRight(modulationData, 2);
+
+					factor++;
+				}
+			}
+
+			PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+			packet->modulationData = modulationData;
+		}
+	}
+}
+
+typedef Interval<ColorRgba<unsigned char>> ColorRgbaBoundingBox;
+
+static void CalculateBoundingBox(ColorRgbaBoundingBox& cbb, const RgbaBitmap& bitmap, int blockX, int blockY)
+{
+	int size = bitmap.GetBitmapWidth();
+	const ColorRgba<unsigned char>* data = bitmap.GetData() + blockY * 4 * size + blockX * 4;
+
+	cbb.min = data[0];
+	cbb.max = data[0];
+
+	cbb |= data[1];
+	cbb |= data[2];
+	cbb |= data[3];
+
+	cbb |= data[size];
+	cbb |= data[size+1];
+	cbb |= data[size+2];
+	cbb |= data[size+3];
+
+	cbb |= data[2*size];
+	cbb |= data[2*size+1];
+	cbb |= data[2*size+2];
+	cbb |= data[2*size+3];
+
+	cbb |= data[3*size];
+	cbb |= data[3*size+1];
+	cbb |= data[3*size+2];
+	cbb |= data[3*size+3];
+}
+
+void PvrTcEncoder::EncodeRgba4Bpp(void* result, const RgbaBitmap& bitmap)
+{
+	assert(bitmap.GetBitmapWidth() == bitmap.GetBitmapHeight());
+	assert(BitUtility::IsPowerOf2(bitmap.GetBitmapWidth()));
+	const int size = bitmap.GetBitmapWidth();
+	const int blocks = size / 4;
+	const int blockMask = blocks-1;
+
+	PvrTcPacket* packets = static_cast<PvrTcPacket*>(result);
+
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			ColorRgbaBoundingBox cbb;
+			CalculateBoundingBox(cbb, bitmap, x, y);
+			PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+			packet->usePunchthroughAlpha = 0;
+			packet->SetColorA(cbb.min);
+			packet->SetColorB(cbb.max);
+		}
+	}
+
+	for(int y = 0; y < blocks; ++y)
+	{
+		for(int x = 0; x < blocks; ++x)
+		{
+			const unsigned char (*factor)[4] = PvrTcPacket::BILINEAR_FACTORS;
+			const ColorRgba<unsigned char>* data = bitmap.GetData() + y * 4 * size + x * 4;
+
+			uint32_t modulationData = 0;
+
+			for(int py = 0; py < 4; ++py)
+			{
+				const int yOffset = (py < 2) ? -1 : 0;
+				const int y0 = (y + yOffset) & blockMask;
+				const int y1 = (y0+1) & blockMask;
+
+				for(int px = 0; px < 4; ++px)
+				{
+					const int xOffset = (px < 2) ? -1 : 0;
+					const int x0 = (x + xOffset) & blockMask;
+					const int x1 = (x0+1) & blockMask;
+
+					const PvrTcPacket* p0 = packets + GetMortonNumber(x0, y0);
+					const PvrTcPacket* p1 = packets + GetMortonNumber(x1, y0);
+					const PvrTcPacket* p2 = packets + GetMortonNumber(x0, y1);
+					const PvrTcPacket* p3 = packets + GetMortonNumber(x1, y1);
+
+					ColorRgba<int> ca = p0->GetColorRgbaA() * (*factor)[0] +
+										p1->GetColorRgbaA() * (*factor)[1] +
+										p2->GetColorRgbaA() * (*factor)[2] +
+										p3->GetColorRgbaA() * (*factor)[3];
+
+					ColorRgba<int> cb = p0->GetColorRgbaB() * (*factor)[0] +
+										p1->GetColorRgbaB() * (*factor)[1] +
+										p2->GetColorRgbaB() * (*factor)[2] +
+										p3->GetColorRgbaB() * (*factor)[3];
+
+					const ColorRgba<unsigned char>& pixel = data[py*size + px];
+					ColorRgba<int> d = cb - ca;
+					ColorRgba<int> p{pixel.r*16, pixel.g*16, pixel.b*16, pixel.a*16};
+					ColorRgba<int> v = p - ca;
+
+					// PVRTC uses weightings of 0, 3/8, 5/8 and 1
+					// The boundaries for these are 3/16, 1/2 (=8/16), 13/16
+					int projection = (v % d) * 16;
+					int lengthSquared = d % d;
+					if(projection > 3*lengthSquared) modulationData++;
+					if(projection > 8*lengthSquared) modulationData++;
+					if(projection > 13*lengthSquared) modulationData++;
+
+					modulationData = BitUtility::RotateRight(modulationData, 2);
+
+					factor++;
+				}
+			}
+
+			PvrTcPacket* packet = packets + GetMortonNumber(x, y);
+			packet->modulationData = modulationData;
+		}
+	}
+}
+
+
+//#line 1 "PvrTcPacket.cpp"
+using namespace Javelin;
+
+const unsigned char PvrTcPacket::BILINEAR_FACTORS[16][4] =
+{
+	{ 4, 4, 4, 4 },
+	{ 2, 6, 2, 6 },
+	{ 8, 0, 8, 0 },
+	{ 6, 2, 6, 2 },
+
+	{ 2, 2, 6, 6 },
+	{ 1, 3, 3, 9 },
+	{ 4, 0, 12, 0 },
+	{ 3, 1, 9, 3 },
+
+	{ 8, 8, 0, 0 },
+	{ 4, 12, 0, 0 },
+	{ 16, 0, 0, 0 },
+	{ 12, 4, 0, 0 },
+
+	{ 6, 6, 2, 2 },
+	{ 3, 9, 1, 3 },
+	{ 12, 0, 4, 0 },
+	{ 9, 3, 3, 1 },
+};
+
+// Weights are { colorA, colorB, alphaA, alphaB }
+const unsigned char PvrTcPacket::WEIGHTS[8][4] =
+{
+	// Weights for Mode=0
+	{ 8, 0, 8, 0 },
+	{ 5, 3, 5, 3 },
+	{ 3, 5, 3, 5 },
+	{ 0, 8, 0, 8 },
+
+	// Weights for Mode=1
+	{ 8, 0, 8, 0 },
+	{ 4, 4, 4, 4 },
+	{ 4, 4, 0, 0 },
+	{ 0, 8, 0, 8 },
+};
+
+ColorRgb<int> PvrTcPacket::GetColorRgbA() const
+{
+	if(colorAIsOpaque)
+	{
+		unsigned char r = colorA >> 9;
+		unsigned char g = colorA >> 4 & 0x1f;
+		unsigned char b = colorA & 0xf;
+		return ColorRgb<int>(Data::BITSCALE_5_TO_8[r],
+							 Data::BITSCALE_5_TO_8[g],
+							 Data::BITSCALE_4_TO_8[b]);
+	}
+	else
+	{
+		unsigned char r = (colorA >> 7) & 0xf;
+		unsigned char g = (colorA >> 3) & 0xf;
+		unsigned char b = colorA & 7;
+		return ColorRgb<int>(Data::BITSCALE_4_TO_8[r],
+							 Data::BITSCALE_4_TO_8[g],
+							 Data::BITSCALE_3_TO_8[b]);
+	}
+}
+
+ColorRgb<int> PvrTcPacket::GetColorRgbB() const
+{
+	if(colorBIsOpaque)
+	{
+		unsigned char r = colorB >> 10;
+		unsigned char g = colorB >> 5 & 0x1f;
+		unsigned char b = colorB & 0x1f;
+		return ColorRgb<int>(Data::BITSCALE_5_TO_8[r],
+							 Data::BITSCALE_5_TO_8[g],
+							 Data::BITSCALE_5_TO_8[b]);
+	}
+	else
+	{
+		unsigned char r = colorB >> 8 & 0xf;
+		unsigned char g = colorB >> 4 & 0xf;
+		unsigned char b = colorB & 0xf;
+		return ColorRgb<int>(Data::BITSCALE_4_TO_8[r],
+							 Data::BITSCALE_4_TO_8[g],
+							 Data::BITSCALE_4_TO_8[b]);
+	}
+}
+
+ColorRgba<int> PvrTcPacket::GetColorRgbaA() const
+{
+	if(colorAIsOpaque)
+	{
+		unsigned char r = colorA >> 9;
+		unsigned char g = colorA >> 4 & 0x1f;
+		unsigned char b = colorA & 0xf;
+		return ColorRgba<int>(Data::BITSCALE_5_TO_8[r],
+							  Data::BITSCALE_5_TO_8[g],
+							  Data::BITSCALE_4_TO_8[b],
+							  255);
+	}
+	else
+	{
+		unsigned char a = colorA >> 11 & 7;
+		unsigned char r = colorA >> 7 & 0xf;
+		unsigned char g = colorA >> 3 & 0xf;
+		unsigned char b = colorA & 7;
+		return ColorRgba<int>(Data::BITSCALE_4_TO_8[r],
+							  Data::BITSCALE_4_TO_8[g],
+							  Data::BITSCALE_3_TO_8[b],
+							  Data::BITSCALE_3_TO_8[a]);
+	}
+}
+
+ColorRgba<int> PvrTcPacket::GetColorRgbaB() const
+{
+	if(colorBIsOpaque)
+	{
+		unsigned char r = colorB >> 10;
+		unsigned char g = colorB >> 5 & 0x1f;
+		unsigned char b = colorB & 0x1f;
+		return ColorRgba<int>(Data::BITSCALE_5_TO_8[r],
+							  Data::BITSCALE_5_TO_8[g],
+							  Data::BITSCALE_5_TO_8[b],
+							  255);
+	}
+	else
+	{
+		unsigned char a = colorB >> 12 & 7;
+		unsigned char r = colorB >> 8 & 0xf;
+		unsigned char g = colorB >> 4 & 0xf;
+		unsigned char b = colorB & 0xf;
+		return ColorRgba<int>(Data::BITSCALE_4_TO_8[r],
+							  Data::BITSCALE_4_TO_8[g],
+							  Data::BITSCALE_4_TO_8[b],
+							  Data::BITSCALE_3_TO_8[a]);
+	}
+}
+
+void PvrTcPacket::SetColorA(const ColorRgb<unsigned char>& c)
+{
+	int r = Data::BITSCALE_8_TO_5_FLOOR[c.r];
+	int g = Data::BITSCALE_8_TO_5_FLOOR[c.g];
+	int b = Data::BITSCALE_8_TO_4_FLOOR[c.b];
+	colorA = r<<9 | g<<4 | b;
+	colorAIsOpaque = true;
+}
+
+void PvrTcPacket::SetColorB(const ColorRgb<unsigned char>& c)
+{
+	int r = Data::BITSCALE_8_TO_5_CEIL[c.r];
+	int g = Data::BITSCALE_8_TO_5_CEIL[c.g];
+	int b = Data::BITSCALE_8_TO_5_CEIL[c.b];
+	colorB = r<<10 | g<<5 | b;
+	colorBIsOpaque = true;
+}
+
+void PvrTcPacket::SetColorA(const ColorRgba<unsigned char>& c)
+{
+	int a = Data::BITSCALE_8_TO_3_FLOOR[c.a];
+	if(a == 7)
+	{
+		int r = Data::BITSCALE_8_TO_5_FLOOR[c.r];
+		int g = Data::BITSCALE_8_TO_5_FLOOR[c.g];
+		int b = Data::BITSCALE_8_TO_4_FLOOR[c.b];
+		colorA = r<<9 | g<<4 | b;
+		colorAIsOpaque = true;
+	}
+	else
+	{
+		int r = Data::BITSCALE_8_TO_4_FLOOR[c.r];
+		int g = Data::BITSCALE_8_TO_4_FLOOR[c.g];
+		int b = Data::BITSCALE_8_TO_3_FLOOR[c.b];
+		colorA = a<<11 | r<<7 | g<<3 | b;
+		colorAIsOpaque = false;
+	}
+}
+
+void PvrTcPacket::SetColorB(const ColorRgba<unsigned char>& c)
+{
+	int a = Data::BITSCALE_8_TO_3_CEIL[c.a];
+	if(a == 7)
+	{
+		int r = Data::BITSCALE_8_TO_5_CEIL[c.r];
+		int g = Data::BITSCALE_8_TO_5_CEIL[c.g];
+		int b = Data::BITSCALE_8_TO_5_CEIL[c.b];
+		colorB = r<<10 | g<<5 | b;
+		colorBIsOpaque = true;
+	}
+	else
+	{
+		int r = Data::BITSCALE_8_TO_4_CEIL[c.r];
+		int g = Data::BITSCALE_8_TO_4_CEIL[c.g];
+		int b = Data::BITSCALE_8_TO_4_CEIL[c.b];
+		colorB = a<<12 | r<<8 | g<<4 | b;
+		colorBIsOpaque = false;
+	}
+}
+
 namespace spot {
 
 //#line 1 "pvr3.hpp"
@@ -37093,9 +38604,62 @@ bool load( std::string &data, const std::string &name, uint32_t reserved = 0 ) {
 }
 */
 
+stream encode_as_pvrtc( const void *bgra, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
+	stream out = {};
+
+	/*
+	auto is_power_of_two = []( unsigned x ) {
+		return ((x & (x - 1)) == 0);
+	};
+	if( !is_power_of_two(w) ) return out;
+	if( !is_power_of_two(h) ) return out;
+	*/
+	bool is_4bpp = true; //quality >= 50;
+	if( w % 4 ) return out;
+	if( h % 4 ) return out;
+
+	// @todo check is %4
+	// Alloc mem
+	int len = ( is_4bpp ? w * h / 2 : w * h / 4 ) + 4;
+	uint8_t *dst = new uint8_t [ reserved + len ];
+	if( !dst ) return out;
+	uint8_t *pvrtc = &dst[ reserved ];
+
+	// init
+	out.w = w;
+	out.h = h;
+	out.d = 1;
+	out.out = dst;
+	out.len = len;
+
+	/****/ if( bpp == 24 ) {
+		Javelin::RgbBitmap bitmap( w, h );
+		memcpy( bitmap.GetData(), bgra, w * h * 3 );
+		//if( is_4bpp ) {
+			out.fmt = pvr3::table1::PVRTC_4BPP_RGB;
+			PvrTcEncoder::EncodeRgb4Bpp(pvrtc, bitmap);
+		/*} else {
+			out.fmt = pvr3::table1::PVRTC_2BPP_RGB;
+			PvrTcEncoder::EncodeRgb2Bpp(pvrtc, bitmap);
+		}*/
+	} else if( bpp == 32 ) {
+		Javelin::RgbaBitmap bitmap( w, h );
+		memcpy( bitmap.GetData(), bgra, w * h * 4 );
+		//if( is_4bpp ) {
+			out.fmt = pvr3::table1::PVRTC_4BPP_RGBA;
+			PvrTcEncoder::EncodeRgba4Bpp(pvrtc, bitmap);
+		/*} else {
+			out.fmt = pvr3::table1::PVRTC_2BPP_RGBA;
+			PvrTcEncoder::EncodeRgba2Bpp(pvrtc, bitmap);
+		}*/
+	}
+
+	return out;
+}
+
 stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
 
-	stream out; out.fmt = pvr3::table1::RGBG8888;
+	stream out = {};
 
 	/* Check for power of 2 {
 	auto is_power_of_two = []( unsigned x ) {
@@ -37166,8 +38730,8 @@ bool save_pkm_etc1( std::string &out, const stream &sm, unsigned reserved ) {
 	return out.clear(), false;
 }
 
-bool save_pvr_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) {
-	if( sm.is_valid() && sm.is_etc1() ) {
+bool save_pvr( std::string &out, const stream &sm, unsigned reserved = 0 ) {
+	if( sm.is_valid() /* && sm.is_etc1() */ ) {
 		pvr3 pvr;
 		pvr.hd.version = tole32(0x03525650);     // 0x03525650, if endianess does not match ; 0x50565203, if endianess does match
 		pvr.hd.flags = tole32(0);                // 0x02, colour values within the texture have been pre-multiplied by the alpha values
@@ -37191,25 +38755,32 @@ bool save_pvr_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) 
 	return out.clear(), false;
 }
 
-bool save_ktx_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) {
-	if( sm.is_valid() && sm.is_etc1() ) {
+bool save_ktx( std::string &out, const stream &sm, unsigned reserved = 0 ) {
+	if( sm.is_valid() ) {
 		ktx k;
-		k.hd.identifier0 = tole32(0x58544bab);
-		k.hd.identifier1 = tole32(0xbb313120);
-		k.hd.identifier2 = tole32(0xa1a0a0d);
-		k.hd.endianness = tole32(0x4030201);
-		k.hd.glType = tole32(0x0); // table 8.2 of opengl 4.4 spec; UNSIGNED_BYTE, UNSIGNED_SHORT_5_6_5, etc.)
-		k.hd.glTypeSize = tole32(0x1); // 1 for compressed data
-		k.hd.glFormat = tole32(0x0); // table 8.3 of opengl 4.4 spec; RGB, RGBA, BGRA...
-		k.hd.glInternalFormat = tole32(0x8d64); // table 8.14 of opengl 4.4 spec; ETC1_RGB8_OES (0x8D64)
-		k.hd.glBaseInternalFormat = tole32(0x1907); // table 8.11 of opengl 4.4 spec; GL_RGB (0x1907), RGBA, ALPHA...
-		k.hd.pixelWidth = tole32(sm.w);
-		k.hd.pixelHeight = tole32(sm.h);
-		k.hd.pixelDepth = tole32(0);
-		k.hd.numberOfArrayElements = tole32(0);
-		k.hd.numberOfFaces = tole32(1);
-		k.hd.numberOfMipmapLevels = tole32(1);
-		k.hd.bytesOfKeyValueData = tole32(0);
+		auto &hd = k.hd;
+		hd.identifier0 = tole32(0x58544bab);
+		hd.identifier1 = tole32(0xbb313120);
+		hd.identifier2 = tole32(0xa1a0a0d);
+		hd.endianness = tole32(0x4030201);
+		hd.glType = tole32(0x0); // table 8.2 of opengl 4.4 spec; UNSIGNED_BYTE, UNSIGNED_SHORT_5_6_5, etc.)
+		hd.glTypeSize = tole32(0x1); // 1 for compressed data
+		hd.glFormat = tole32(0x0); // table 8.3 of opengl 4.4 spec; RGB, RGBA, BGRA...
+		// glInternalFormat:     table 8.14 of opengl 4.4 spec; ETC1_RGB8_OES (0x8D64)
+		// glBaseInternalFormat: table 8.11 of opengl 4.4 spec; GL_RGB (0x1907), RGBA, ALPHA...
+		/**/ if( sm.fmt == pvr3::table1::ETC1 )            { hd.glInternalFormat = tole32(0x8d64), hd.glBaseInternalFormat = tole32(0x1907); }
+		else if( sm.fmt == pvr3::table1::PVRTC_2BPP_RGB )  { hd.glInternalFormat = tole32(0x8c01), hd.glBaseInternalFormat = tole32(0x1907); }
+		else if( sm.fmt == pvr3::table1::PVRTC_2BPP_RGBA ) { hd.glInternalFormat = tole32(0x8c03), hd.glBaseInternalFormat = tole32(0x1908); }
+		else if( sm.fmt == pvr3::table1::PVRTC_4BPP_RGB )  { hd.glInternalFormat = tole32(0x8c00), hd.glBaseInternalFormat = tole32(0x1907); }
+		else if( sm.fmt == pvr3::table1::PVRTC_4BPP_RGBA ) { hd.glInternalFormat = tole32(0x8c02), hd.glBaseInternalFormat = tole32(0x1908); }
+		else return false;
+		hd.pixelWidth = tole32(sm.w);
+		hd.pixelHeight = tole32(sm.h);
+		hd.pixelDepth = tole32(0);
+		hd.numberOfArrayElements = tole32(0);
+		hd.numberOfFaces = tole32(1);
+		hd.numberOfMipmapLevels = tole32(1);
+		hd.bytesOfKeyValueData = tole32(0);
 		if( devel ) k.debug(std::cout);
 
 		out.resize( sizeof(ktx::header) + reserved );
@@ -37219,13 +38790,13 @@ bool save_ktx_etc1( std::string &out, const stream &sm, unsigned reserved = 0 ) 
 	return out.clear(), false;
 }
 
-std::string save_pvr_etc1( const stream &sm, unsigned reserved = 0 ) {
+std::string save_pvr( const stream &sm, unsigned reserved = 0 ) {
 	std::string out;
-	return save_pvr_etc1( out, sm, reserved ) ? out : std::string();
+	return save_pvr( out, sm, reserved ) ? out : std::string();
 }
-std::string save_ktx_etc1( const stream &sm, unsigned reserved = 0 ) {
+std::string save_ktx( const stream &sm, unsigned reserved = 0 ) {
 	std::string out;
-	return save_ktx_etc1( out, sm, reserved ) ? out : std::string();
+	return save_ktx( out, sm, reserved ) ? out : std::string();
 }
 std::string save_pkm_etc1( const stream &sm, unsigned reserved = 0 ) {
 	std::string out;
@@ -37379,9 +38950,9 @@ namespace spot
 
 		std::string encode_ktx( unsigned w, unsigned h, const void *data, unsigned quality ) {
 			if( w && h && data && quality ) {
-				stream sm = encode_as_etc1( data, w, h, 32, quality );
+				stream sm = encode_as_etc1( data, w, h, 24, quality );
 				std::stringstream ss;
-				ss << save_ktx_etc1(sm);
+				ss << save_ktx(sm);
 				uint32_t len32( sm.len );
 				ss.write( (const char *)&len32, 4 );
 				ss.write( (const char *)sm.in, sm.len );
@@ -37393,9 +38964,10 @@ namespace spot
 
 		std::string encode_pvr( unsigned w, unsigned h, const void *data, unsigned quality ) {
 			if( w && h && data && quality ) {
-				stream sm = encode_as_etc1( data, w, h, 32, quality );
+				//stream sm = encode_as_etc1( data, w, h, 32, quality );
+				stream sm = encode_as_pvrtc( data, w, h, 32, quality );
 				std::stringstream ss;
-				ss << save_pvr_etc1(sm);
+				ss << save_pvr(sm);
 				ss.write( (const char *)sm.in, sm.len );
 				delete [] ((uint8_t *)sm.out);
 				return ss.str();
@@ -37405,7 +38977,7 @@ namespace spot
 
 		std::string encode_pkm( unsigned w, unsigned h, const void *data, unsigned quality ) {
 			if( w && h && data && quality ) {
-				stream sm = encode_as_etc1( data, w, h, 32, quality );
+				stream sm = encode_as_etc1( data, w, h, 24, quality );
 				std::stringstream ss;
 				ss << save_pkm_etc1(sm);
 				ss.write( (const char *)sm.in, sm.len );

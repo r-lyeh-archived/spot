@@ -17,7 +17,7 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.0.2"
+#define SPOT_VERSION "2.0.3"
 
 #include <stddef.h>
 #include <string.h>
@@ -719,7 +719,7 @@ namespace spot
             if( this->empty() || w * h <= 0 ) {
                 return std::string();
             }
-            std::vector<unsigned char> pixels = rgbx(255);
+            std::vector<unsigned char> pixels = rgb();
             return internals::encode_ktx( w, h, &pixels[0], quality );
         }
 
@@ -734,7 +734,7 @@ namespace spot
             if( this->empty() || w * h <= 0 ) {
                 return std::string();
             }
-            std::vector<unsigned char> pixels = rgbx(255);
+            std::vector<unsigned char> pixels = bgra();
             return internals::encode_pvr( w, h, &pixels[0], quality );
         }
 
@@ -749,7 +749,7 @@ namespace spot
             if( this->empty() || w * h <= 0 ) {
                 return std::string();
             }
-            std::vector<unsigned char> pixels = rgbx(255);
+            std::vector<unsigned char> pixels = rgb();
             return internals::encode_pkm( w, h, &pixels[0], quality );
         }
 
@@ -829,6 +829,20 @@ namespace spot
             return pixels;
         }
 
+        std::vector<unsigned char> bgra() const {
+            rect temp = this->to_rgba();
+
+            std::vector<unsigned char> pixels( w * h * 4 ); pixels.resize(0);
+            for( auto &px : temp ) {
+                pixel p = px;
+                pixels.push_back( p.b );
+                pixels.push_back( p.g );
+                pixels.push_back( p.r );
+                pixels.push_back( p.a );
+            }
+            return pixels;
+        }
+
         std::vector<unsigned char> rgbx( unsigned char x ) const {
             rect temp = this->to_rgba();
 
@@ -843,15 +857,42 @@ namespace spot
             return pixels;
         }
 
-        std::vector<unsigned char> rgb() const {
+        std::vector<unsigned char> bgrx( unsigned char x ) const {
             rect temp = this->to_rgba();
 
             std::vector<unsigned char> pixels( w * h * 4 ); pixels.resize(0);
             for( auto &px : temp ) {
                 pixel p = px;
+                pixels.push_back( p.b );
+                pixels.push_back( p.g );
+                pixels.push_back( p.r );
+                pixels.push_back( x );
+            }
+            return pixels;
+        }        
+
+        std::vector<unsigned char> rgb() const {
+            rect temp = this->to_rgba();
+
+            std::vector<unsigned char> pixels( w * h * 3 ); pixels.resize(0);
+            for( auto &px : temp ) {
+                pixel p = px;
                 pixels.push_back( p.r );
                 pixels.push_back( p.g );
                 pixels.push_back( p.b );
+            }
+            return pixels;
+        }
+
+        std::vector<unsigned char> bgr() const {
+            rect temp = this->to_rgba();
+
+            std::vector<unsigned char> pixels( w * h * 3 ); pixels.resize(0);
+            for( auto &px : temp ) {
+                pixel p = px;
+                pixels.push_back( p.b );
+                pixels.push_back( p.g );
+                pixels.push_back( p.r );
             }
             return pixels;
         }
