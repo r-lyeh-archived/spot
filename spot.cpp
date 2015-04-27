@@ -38950,7 +38950,7 @@ namespace spot
 
 		std::string encode_ktx( unsigned w, unsigned h, const void *data, unsigned quality ) {
 			if( w && h && data && quality ) {
-				stream sm = encode_as_etc1( data, w, h, 24, quality );
+				stream sm = encode_as_etc1( data, w, h, 32, quality );
 				std::stringstream ss;
 				ss << save_ktx(sm);
 				uint32_t len32( sm.len );
@@ -38977,7 +38977,7 @@ namespace spot
 
 		std::string encode_pkm( unsigned w, unsigned h, const void *data, unsigned quality ) {
 			if( w && h && data && quality ) {
-				stream sm = encode_as_etc1( data, w, h, 24, quality );
+				stream sm = encode_as_etc1( data, w, h, 32, quality );
 				std::stringstream ss;
 				ss << save_pkm_etc1(sm);
 				ss.write( (const char *)sm.in, sm.len );

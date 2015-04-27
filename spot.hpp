@@ -17,7 +17,7 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.0.3"
+#define SPOT_VERSION "2.0.4"
 
 #include <stddef.h>
 #include <string.h>
@@ -719,7 +719,7 @@ namespace spot
             if( this->empty() || w * h <= 0 ) {
                 return std::string();
             }
-            std::vector<unsigned char> pixels = rgb();
+            std::vector<unsigned char> pixels = rgba();
             return internals::encode_ktx( w, h, &pixels[0], quality );
         }
 
@@ -749,7 +749,7 @@ namespace spot
             if( this->empty() || w * h <= 0 ) {
                 return std::string();
             }
-            std::vector<unsigned char> pixels = rgb();
+            std::vector<unsigned char> pixels = rgba();
             return internals::encode_pkm( w, h, &pixels[0], quality );
         }
 
@@ -900,7 +900,7 @@ namespace spot
         std::vector<unsigned char> y() const {
             rect temp = this->to_rgba();
 
-            std::vector<unsigned char> pixels( w * h * 4 ); pixels.resize(0);
+            std::vector<unsigned char> pixels( w * h ); pixels.resize(0);
             for( auto &px : temp ) {
                 pixel p = px;
                 pixels.push_back( (unsigned char)((p.r+p.g+p.b)/3) );
@@ -911,7 +911,7 @@ namespace spot
         std::vector<unsigned char> ya() const {
             rect temp = this->to_rgba();
 
-            std::vector<unsigned char> pixels( w * h * 4 ); pixels.resize(0);
+            std::vector<unsigned char> pixels( w * h * 2 ); pixels.resize(0);
             for( auto &px : temp ) {
                 pixel p = px;
                 pixels.push_back( (p.r+p.g+p.b)/3 );
@@ -923,7 +923,7 @@ namespace spot
         std::vector<unsigned char> a() const {
             rect temp = this->to_rgba();
 
-            std::vector<unsigned char> pixels( w * h * 4 ); pixels.resize(0);
+            std::vector<unsigned char> pixels( w * h ); pixels.resize(0);
             for( auto &px : temp ) {
                 pixel p = px;
                 pixels.push_back( p.a );
