@@ -35939,24 +35939,20 @@ namespace Javelin
 
 #endif
 
-#ifdef _WIN32
-#define constexpr const
-#endif
-
-constexpr uint8_t Javelin::Data::BITSCALE_5_TO_8[32] = {
+const uint8_t Javelin::Data::BITSCALE_5_TO_8[32] = {
  0, 8, 16, 24, 32, 41, 49, 57, 65, 74,
  82, 90, 98, 106, 115, 123, 131, 139, 148, 156,
  164, 172, 180, 189, 197, 205, 213, 222, 230, 238,
  246, 255};
 
-constexpr uint8_t Javelin::Data::BITSCALE_4_TO_8[16] = {
+const uint8_t Javelin::Data::BITSCALE_4_TO_8[16] = {
  0, 17, 34, 51, 68, 85, 102, 119, 136, 153,
  170, 187, 204, 221, 238, 255};
 
-constexpr uint8_t Javelin::Data::BITSCALE_3_TO_8[8] = {
+const uint8_t Javelin::Data::BITSCALE_3_TO_8[8] = {
  0, 36, 72, 109, 145, 182, 218, 255};
 
-constexpr uint8_t Javelin::Data::BITSCALE_8_TO_5_FLOOR[256] = {
+const uint8_t Javelin::Data::BITSCALE_8_TO_5_FLOOR[256] = {
  0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
  1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
  2, 2, 2, 2, 2, 3, 3, 3, 3, 3,
@@ -35984,7 +35980,7 @@ constexpr uint8_t Javelin::Data::BITSCALE_8_TO_5_FLOOR[256] = {
  29, 29, 29, 29, 29, 29, 29, 30, 30, 30,
  30, 30, 30, 30, 30, 31};
 
-constexpr uint8_t Javelin::Data::BITSCALE_8_TO_4_FLOOR[256] = {
+const uint8_t Javelin::Data::BITSCALE_8_TO_4_FLOOR[256] = {
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
  1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -36012,7 +36008,7 @@ constexpr uint8_t Javelin::Data::BITSCALE_8_TO_4_FLOOR[256] = {
  14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
  14, 14, 14, 14, 14, 15};
 
-constexpr uint8_t Javelin::Data::BITSCALE_8_TO_3_FLOOR[256] = {
+const uint8_t Javelin::Data::BITSCALE_8_TO_3_FLOOR[256] = {
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -36040,7 +36036,7 @@ constexpr uint8_t Javelin::Data::BITSCALE_8_TO_3_FLOOR[256] = {
  6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
  6, 6, 6, 6, 6, 7};
 
-constexpr uint8_t Javelin::Data::BITSCALE_8_TO_5_CEIL[256] = {
+const uint8_t Javelin::Data::BITSCALE_8_TO_5_CEIL[256] = {
  0, 1, 1, 1, 1, 1, 1, 1, 1, 2,
  2, 2, 2, 2, 2, 2, 2, 3, 3, 3,
  3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
@@ -36068,7 +36064,7 @@ constexpr uint8_t Javelin::Data::BITSCALE_8_TO_5_CEIL[256] = {
  30, 30, 30, 30, 30, 30, 30, 31, 31, 31,
  31, 31, 31, 31, 31, 31};
 
-constexpr uint8_t Javelin::Data::BITSCALE_8_TO_4_CEIL[256] = {
+const uint8_t Javelin::Data::BITSCALE_8_TO_4_CEIL[256] = {
  0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
  1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
  2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -36096,7 +36092,7 @@ constexpr uint8_t Javelin::Data::BITSCALE_8_TO_4_CEIL[256] = {
  15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
  15, 15, 15, 15, 15, 15};
 
-constexpr uint8_t Javelin::Data::BITSCALE_8_TO_3_CEIL[256] = {
+const uint8_t Javelin::Data::BITSCALE_8_TO_3_CEIL[256] = {
  0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
  1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
  1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -36143,11 +36139,7 @@ namespace Javelin
 
 #endif
 
-#ifdef _WIN32
-#define constexpr const
-#endif
-
-constexpr unsigned short Javelin::Data::MORTON_TABLE[256] =
+const unsigned short Javelin::Data::MORTON_TABLE[256] =
 {
 	0x0000, 0x0001, 0x0004, 0x0005, 0x0010, 0x0011, 0x0014, 0x0015,
 	0x0040, 0x0041, 0x0044, 0x0045, 0x0050, 0x0051, 0x0054, 0x0055,
@@ -36975,7 +36967,7 @@ void PvrTcEncoder::EncodeRgb4Bpp(void* result, const RgbBitmap& bitmap)
 
 					const ColorRgb<unsigned char>& pixel = data[py*size + px];
 					ColorRgb<int> d = cb - ca;
-					ColorRgb<int> p{pixel.r*16, pixel.g*16, pixel.b*16};
+					ColorRgb<int> p( pixel.r*16, pixel.g*16, pixel.b*16 );
 					ColorRgb<int> v = p - ca;
 
 					// PVRTC uses weightings of 0, 3/8, 5/8 and 1
@@ -37087,7 +37079,7 @@ void PvrTcEncoder::EncodeRgb4Bpp(void* result, const RgbaBitmap& bitmap)
 
 					const ColorRgb<unsigned char>& pixel = data[py*size + px];
 					ColorRgb<int> d = cb - ca;
-					ColorRgb<int> p{pixel.r*16, pixel.g*16, pixel.b*16};
+					ColorRgb<int> p( pixel.r*16, pixel.g*16, pixel.b*16 );
 					ColorRgb<int> v = p - ca;
 
 					// PVRTC uses weightings of 0, 3/8, 5/8 and 1
@@ -37201,7 +37193,7 @@ void PvrTcEncoder::EncodeRgba4Bpp(void* result, const RgbaBitmap& bitmap)
 
 					const ColorRgba<unsigned char>& pixel = data[py*size + px];
 					ColorRgba<int> d = cb - ca;
-					ColorRgba<int> p{pixel.r*16, pixel.g*16, pixel.b*16, pixel.a*16};
+					ColorRgba<int> p( pixel.r*16, pixel.g*16, pixel.b*16, pixel.a*16 );
 					ColorRgba<int> v = p - ca;
 
 					// PVRTC uses weightings of 0, 3/8, 5/8 and 1

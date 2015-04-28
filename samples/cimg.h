@@ -2321,7 +2321,7 @@ namespace cimg_library_suffixed {
       static bool is_inf(const unsigned char) { return false; }
       static bool is_nan(const unsigned char) { return false; }
       static unsigned char min() { return 0; }
-      static unsigned char max() { return (unsigned char)~0U; }
+      static unsigned char max() { return (unsigned char)-1; }
       static unsigned char inf() { return max(); }
       static unsigned char cut(const double val) {
         return val<(double)min()?min():val>(double)max()?max():(unsigned char)val; }
@@ -2362,7 +2362,7 @@ namespace cimg_library_suffixed {
       static bool is_inf(const unsigned short) { return false; }
       static bool is_nan(const unsigned short) { return false; }
       static unsigned short min() { return 0; }
-      static unsigned short max() { return (unsigned short)~0U; }
+      static unsigned short max() { return (unsigned short)-1; }
       static unsigned short inf() { return max(); }
       static unsigned short cut(const double val) {
         return val<(double)min()?min():val>(double)max()?max():(unsigned short)val; }

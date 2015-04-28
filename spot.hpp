@@ -17,7 +17,7 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.0.4"
+#define SPOT_VERSION "2.0.5"
 
 #include <stddef.h>
 #include <string.h>

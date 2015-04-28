@@ -206,6 +206,8 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.0.5 (2015/04/27)
+  - pvrtc encoder: c++0x support
 - v2.0.4 (2015/04/27)
   - fixed etc1 encoder
   - fixed ya()/a() vector size

@@ -208,7 +208,7 @@ void PvrTcEncoder::EncodeRgb4Bpp(void* result, const RgbBitmap& bitmap)
 					
 					const ColorRgb<unsigned char>& pixel = data[py*size + px];
 					ColorRgb<int> d = cb - ca;
-					ColorRgb<int> p{pixel.r*16, pixel.g*16, pixel.b*16};
+					ColorRgb<int> p( pixel.r*16, pixel.g*16, pixel.b*16 );
 					ColorRgb<int> v = p - ca;
 					
 					// PVRTC uses weightings of 0, 3/8, 5/8 and 1
@@ -322,7 +322,7 @@ void PvrTcEncoder::EncodeRgb4Bpp(void* result, const RgbaBitmap& bitmap)
 					
 					const ColorRgb<unsigned char>& pixel = data[py*size + px];
 					ColorRgb<int> d = cb - ca;
-					ColorRgb<int> p{pixel.r*16, pixel.g*16, pixel.b*16};
+					ColorRgb<int> p( pixel.r*16, pixel.g*16, pixel.b*16 );
 					ColorRgb<int> v = p - ca;
 					
 					// PVRTC uses weightings of 0, 3/8, 5/8 and 1
@@ -438,7 +438,7 @@ void PvrTcEncoder::EncodeRgba4Bpp(void* result, const RgbaBitmap& bitmap)
 					
 					const ColorRgba<unsigned char>& pixel = data[py*size + px];
 					ColorRgba<int> d = cb - ca;
-					ColorRgba<int> p{pixel.r*16, pixel.g*16, pixel.b*16, pixel.a*16};
+					ColorRgba<int> p( pixel.r*16, pixel.g*16, pixel.b*16, pixel.a*16 );
 					ColorRgba<int> v = p - ca;
 					
 					// PVRTC uses weightings of 0, 3/8, 5/8 and 1
