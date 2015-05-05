@@ -12,6 +12,7 @@ int main( int argc, char **argv ) {
     }
 
     spot::image base( argv[1] );
+    base.print( 10, 10, argv[1] );
 
     spot::image saturated = base * spot::hsla( 1, 2, 1, 1 );
     spot::image desaturated = base * spot::hsla( 1, 0.5f, 1, 1 );

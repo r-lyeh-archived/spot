@@ -145,6 +145,8 @@ namespace spot {
 #include "deps/pvrtc/PVRTDecompress.cpp"
 }
 
+#include "deps/unifont/unifont.hpp"
+
 extern "C"
 int stbi_write_dds( char const *filename, int w, int h, int comp, const void *data ) {
    return save_image_as_DDS( filename, w, h, comp, (const unsigned char *const) data );
@@ -1280,5 +1282,21 @@ namespace spot
     pixel::operator color() const {
         pixel c = this->clamp().to_hsla();
         return spot::color(c.r / 255.f, c.g / 255.f, c.b / 255.f, c.a / 255.f);
+    }
+
+    static pixel rgba8888( unsigned char r, unsigned char g, unsigned char b, unsigned char a ) {
+        return pixel(r,g,b,a);
+    }
+    static color rgba8888_alt( unsigned char r, unsigned char g, unsigned char b, unsigned char a ) {
+        return pixel(r,g,b,a);
+    }
+
+    void texture::print( int x, int y, const char *utf8 ) {
+        unifont<pixel> f( &(this->operator[](0)), this->w, &rgba8888 );
+        f.render_string( x, y, 0|2, utf8 );
+    }
+    void image::print( int x, int y, const char *utf8 ) {
+        unifont<color> f( &(this->operator[](0)), this->w, &rgba8888_alt );
+        f.render_string( x, y, 0|2, utf8 );
     }
 }

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.0.5"
+#define SPOT_VERSION "2.0.6"
 
 #include <stddef.h>
 #include <string.h>
@@ -1222,7 +1222,11 @@ namespace spot
             sm.deleter = 0;
             sm.hint = 0;
             import_texture( sm );
-        }   
+        }
+
+        // debug 2d
+
+        void print( int x, int y, const char *utf8 );
 
         private: 
         void import_texture( const stream &st ) {
@@ -1297,5 +1301,9 @@ namespace spot
             }
             return true;
         }
+
+        // debug 2d
+
+        void print( int x, int y, const char *utf8 );
     };
 }

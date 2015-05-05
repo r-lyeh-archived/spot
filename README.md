@@ -185,7 +185,7 @@ class image : public std::vector<color>
 - endianness issues
 
 ## licenses
-- [spot](https://github.com/r-lyeh/spot) (BOOST licensed).
+- [spot](https://github.com/r-lyeh/spot) (BOOST license).
 - [crn2dds](redist/deps/crn2dds) by r-lyeh, SpartanJ and Evan Parker (Public Domain).
 - [crnlib](https://code.google.com/p/crunch/), by Rich Geldreich (ZLIB license).
 - [DDS writer](http://www.lonesock.net/soil.html) by Jonathan Dummer (Public Domain).
@@ -200,12 +200,15 @@ class image : public std::vector<color>
 - [rg_etc1](https://code.google.com/p/rg-etc1/) by Rich Geldreich (ZLIB license).
 - [soil2](https://bitbucket.org/SpartanJ/soil2/) by Martin Lucas Golini and Jonathan Dummer (Public Domain).
 - [stb_image](http://github.com/nothings/stb) by Sean Barrett (Public Domain).
+- [unifont](https://github.com/r-lyeh/unifont) (ZLIB license).
 
 ## notes
 - Samples are Public Domain licensed. Samples use CImg.h by David Tschumperle (CeCILL-C license) to display images. 
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.0.6 (2015/05/05)
+  - print() method added;
 - v2.0.5 (2015/04/27)
   - pvrtc encoder: c++0x support
 - v2.0.4 (2015/04/27)
