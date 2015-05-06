@@ -9,11 +9,21 @@
 #include "spot.hpp"
 #include "cimg.hpp"
 
-#define VERSION "1.0.5"
+#define VERSION "1.0.6"
 
+// app options
+unsigned quality = 90;
+std::string folder, hint = "png", ext;
+bool unique_extension = false;
+bool generate_mipmaps = false;
+bool preview = false;
+bool verbose = false;
+
+// app formats
 const std::vector<std::string> readable( spot::list_supported_inputs() );
 const std::vector<std::string> writeable( spot::list_supported_outputs() );
 
+// mipmap tools
 spot::image &halve( spot::image &img, unsigned factor = 2 ) {
     if( factor >= 2 ) {
         for( unsigned y = 0, h = img.h / factor; y < h; ++y ) {
@@ -40,7 +50,7 @@ spot::image build_mipmaps( spot::image img, unsigned maxlevels = 0 ) {
     return cpy;
 }
 
-
+// usage
 int help( int argc, const char **argv ) {
     std::cout << argv[0] << " v" VERSION " (libspot v" SPOT_VERSION ") - quick image converter. https://github.com/r-lyeh/spot" << std::endl << std::endl;
 
@@ -51,6 +61,7 @@ int help( int argc, const char **argv ) {
     std::cout << "          -m, --mipmaps                    generate mipmaps" << std::endl;
     std::cout << "          -p, --preview                    preview conversion" << std::endl;
     std::cout << "          -u, --unique-extension           do not append new extension in output basename (default: disabled)" << std::endl;
+    std::cout << "          -v, --verbose                    print loading/encoding time and image stats" << std::endl;
     std::cout << "          -f ext, --force-extension ext    use provided extension in output basename despite conversion format (default: disabled)" << std::endl;
     std::cout << "          -o folder, --output folder       set folder of output files (default: input image folder)" << std::endl;
     std::cout << "          -q number, --quality number      applies to lossy format images (default: 90, range: 0..100)" << std::endl << std::endl;
@@ -85,49 +96,60 @@ int help( int argc, const char **argv ) {
     return -1;
 }
 
-bool convert( const std::string &in, const std::string &out, const std::string &hint, bool generate_mipmaps, bool preview, unsigned quality ) {
+// app core
+bool convert( const std::string &in, const std::string &out, const std::string &hint ) {
     spot::image img;
 
-    if( !img.load( in ) ) {
+    double loading = bench( [&]{ 
+        img = spot::image( in );
+    } );
+
+    if( !img.loaded() ) {
         return false;
     }
 
     spot::image backup = img;
 
-    if( generate_mipmaps ) {
-        img = build_mipmaps( img );
-    }
+    double mipmaps = !generate_mipmaps ? 0 : bench( [&]{ 
+        img = build_mipmaps( img ); 
+    } );
 
     bool ok = false;
-    /**/ if( hint == "png" ) {
-        ok = img.save_as_png( out );
-    }
-    else if( hint == "jpg" ) {
-        ok = img.save_as_jpg( out, quality );
-    }
-    else if( hint == "pug" ) {
-        ok = img.save_as_pug( out, quality );
-    }
-    else if( hint == "bmp" ) {
-        ok = img.save_as_bmp( out );
-    }
-    else if( hint == "tga" ) {
-        ok = img.save_as_tga( out );
-    }
-    else if( hint == "dds" ) {
-        ok = img.save_as_dds( out );
-    }
-    else if( hint == "webp" ) {
-        ok = img.save_as_webp( out, quality );
-    }
-    else if( hint == "ktx" ) {
-        ok = img.save_as_ktx( out, quality );
-    }
-    else if( hint == "pvr" ) {
-        ok = img.save_as_pvr( out, quality );
-    }
-    else if( hint == "pkm" ) {
-        ok = img.save_as_pkm( out, quality );
+    double encoding = bench( [&] {
+        /**/ if( hint == "png" ) {
+            ok = img.save_as_png( out );
+        }
+        else if( hint == "jpg" ) {
+            ok = img.save_as_jpg( out, quality );
+        }
+        else if( hint == "pug" ) {
+            ok = img.save_as_pug( out, quality );
+        }
+        else if( hint == "bmp" ) {
+            ok = img.save_as_bmp( out );
+        }
+        else if( hint == "tga" ) {
+            ok = img.save_as_tga( out );
+        }
+        else if( hint == "dds" ) {
+            ok = img.save_as_dds( out );
+        }
+        else if( hint == "webp" ) {
+            ok = img.save_as_webp( out, quality );
+        }
+        else if( hint == "ktx" ) {
+            ok = img.save_as_ktx( out, quality );
+        }
+        else if( hint == "pvr" ) {
+            ok = img.save_as_pvr( out, quality );
+        }
+        else if( hint == "pkm" ) {
+            ok = img.save_as_pkm( out, quality );
+        }
+    } );
+
+    if( verbose ) {
+        std::cout << " (loading: " << int(loading*1000) << " ms) (build-mipmaps: " << int(mipmaps*1000) << " ms) (encoding: " << int(encoding*1000) << " ms)";
     }
 
     if( ok && preview ) {
@@ -140,7 +162,7 @@ bool convert( const std::string &in, const std::string &out, const std::string &
     return ok;
 }
 
-
+// app interface
 int main( int argc, const char **argv ) {
 
 #   ifdef _WIN32
@@ -148,12 +170,6 @@ int main( int argc, const char **argv ) {
 #   else
     char slash = '/';
 #   endif
-
-    unsigned quality = 90;
-    std::string folder, hint = "png", ext;
-    bool unique_extension = false;
-    bool generate_mipmaps = false;
-    bool preview = false;
 
     std::deque< std::string > list;
     
@@ -167,6 +183,7 @@ int main( int argc, const char **argv ) {
             /**/ if( arg == "-h" || arg == "--help" ) return help( argc, argv );
             else if( arg == "-m" || arg == "--mipmaps" ) generate_mipmaps = true;
             else if( arg == "-p" || arg == "--preview" ) preview = true;
+            else if( arg == "-v" || arg == "--verbose" ) verbose = true;
             else if( arg == "-u" || arg == "--unique-extension" ) unique_extension = true;
             else if((arg == "-f" || arg == "--force-extension" ) && has_second_arg ) ext = argv[++i];
             else if((arg == "-o" || arg == "--output" ) && has_second_arg ) folder = argv[++i];
@@ -216,7 +233,7 @@ int main( int argc, const char **argv ) {
         }
 
         std::cout << "[    ] " << file << " -> " << out;
-        bool ok = convert( file, out, hint, generate_mipmaps, preview, quality );
+        bool ok = convert( file, out, hint );
         if( ok ) {
             if( !ext.empty() ) {
                 std::cout << " (as " << hint << ")";

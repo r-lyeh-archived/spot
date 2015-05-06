@@ -102,6 +102,7 @@
 #define STBI_FREE(p)      spot_free(p)
 #define STBI_REALLOC(p,x) spot_realloc(p,x)
 */
+#define STB_IMAGE_STATIC
 #define STBI_NO_STDIO
 #include "deps/soil2/stb_image.c"
 #include "deps/soil2/stb_image_write.c"

@@ -207,8 +207,11 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.0.7 (2015/05/06)
+  - stb image library defined as static (fixes multiple symbol definitions in large projects)
+  - upgraded tools
 - v2.0.6 (2015/05/05)
-  - print() method added;
+  - print() method added
 - v2.0.5 (2015/04/27)
   - pvrtc encoder: c++0x support
 - v2.0.4 (2015/04/27)
@@ -222,7 +225,7 @@ class image : public std::vector<color>
   - android support (again)
   - increased tests
 - v2.0.1 (2015/04/23)
-  - bugfixed many b/w images
+  - bugfixed monochromatic images
 - v2.0.0 (2015/04/22)
   - etc1 encode/decode stream support
   - pvr3/ktx/pkm load/save file support
