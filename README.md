@@ -190,6 +190,7 @@ class image : public std::vector<color>
 - [crnlib](https://code.google.com/p/crunch/), by Rich Geldreich (ZLIB license).
 - [DDS writer](http://www.lonesock.net/soil.html) by Jonathan Dummer (Public Domain).
 - [etc1utils](redist/deps/soil2/etc1_utils.h) by Google Inc (Apache 2.0 license).
+- [etcpak](https://bitbucket.org/wolfpld/etcpak/wiki/Home) by Bartosz Taudul (BSD-3 license).
 - [jpge](https://code.google.com/p/jpeg-compressor/) by Rich Geldreich (Public Domain).
 - [libwebp](https://code.google.com/p/webp/) by Google Inc (BSD license).
 - [lodepng](http://lodev.org/lodepng/) by Lode Vandevenne (ZLIB license).
@@ -207,6 +208,8 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.0.8 (2015/05/07)
+  - faster etc1 encoding on low quality settings (using custom etcpak library)
 - v2.0.7 (2015/05/06)
   - stb image library defined as static (fixes multiple symbol definitions in large projects)
   - upgraded tools

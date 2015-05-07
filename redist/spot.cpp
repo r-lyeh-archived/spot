@@ -146,22 +146,18 @@ namespace spot {
 #include "deps/pvrtc/PVRTDecompress.cpp"
 }
 
+#define Bitmap Bitmap2
+#include "deps/wolfpld-etcpak/Bitmap.cpp"
+#include "deps/wolfpld-etcpak/BlockBitmap.cpp"
+#include "deps/wolfpld-etcpak/BlockData.cpp"
+#include "deps/wolfpld-etcpak/Dither.cpp"
+#include "deps/wolfpld-etcpak/MSE.cpp"
+#include "deps/wolfpld-etcpak/ProcessAlpha.cpp"
+#define CalcErrorBlock CalcErrorBlock2
+#include "deps/wolfpld-etcpak/ProcessRGB.cpp"
+#include "deps/wolfpld-etcpak/Tables.cpp"
+
 #include "deps/unifont/unifont.hpp"
-
-extern "C"
-int stbi_write_dds( char const *filename, int w, int h, int comp, const void *data ) {
-   return save_image_as_DDS( filename, w, h, comp, (const unsigned char *const) data );
-}
-
-extern "C"
-int WebPGetInfo(const uint8_t* data, size_t data_size, int* width, int* height);
-
-extern "C"
-uint8_t* WebPDecodeRGBA(const uint8_t* data, size_t data_size, int* width, int* height);
-
-extern "C"
-size_t WebPEncodeRGBA(const unsigned char* rgba, int width, int height, int stride, float quality_factor, unsigned char** output);
-
 
 
 // portable endianness stuff. rlyeh, public domain {
@@ -195,6 +191,29 @@ uint32_t tole32( uint32_t x ) {
 #define  ntoh32(x) ( IS_BIG_ENDIAN ? (x) : swap32(x) )
 // }
 
+extern "C"
+int stbi_write_dds( char const *filename, int w, int h, int comp, const void *data ) {
+   return save_image_as_DDS( filename, w, h, comp, (const unsigned char *const) data );
+}
+
+extern "C"
+int WebPGetInfo(const uint8_t* data, size_t data_size, int* width, int* height);
+
+extern "C"
+uint8_t* WebPDecodeRGBA(const uint8_t* data, size_t data_size, int* width, int* height);
+
+extern "C"
+size_t WebPEncodeRGBA(const unsigned char* rgba, int width, int height, int stride, float quality_factor, unsigned char** output);
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
+// we're ready at this point...
 
 namespace spot {
 
@@ -206,10 +225,10 @@ bool devel = false;
 #define stbi__malloc malloc
 #define STBI_FREE free
 #define stbi_uc unsigned char */
-static stbi_uc stbi__compute_y2(int r, int g, int b) {
+static stbi_uc stbi__compute_y(int r, int g, int b) {
    return (stbi_uc) (((r*77) + (g*150) +  (29*b)) >> 8);
 }
-static stbi_uc *stbi__convert_format2(unsigned char *data, int bpp_src, int bpp_dst, unsigned int x, unsigned int y) {
+static stbi_uc *stbi__convert_format(unsigned char *data, int bpp_src, int bpp_dst, unsigned int x, unsigned int y) {
    int i,j;
    stbi_uc *good;
 
@@ -238,10 +257,10 @@ static stbi_uc *stbi__convert_format2(unsigned char *data, int bpp_src, int bpp_
          CASE(2,3) dest[0]=dest[1]=dest[2]=src[0]; break;
          CASE(2,4) dest[0]=dest[1]=dest[2]=src[0], dest[3]=src[1]; break;
          CASE(3,4) dest[0]=src[0],dest[1]=src[1],dest[2]=src[2],dest[3]=255; break;
-         CASE(3,1) dest[0]=stbi__compute_y2(src[0],src[1],src[2]); break;
-         CASE(3,2) dest[0]=stbi__compute_y2(src[0],src[1],src[2]), dest[1] = 255; break;
-         CASE(4,1) dest[0]=stbi__compute_y2(src[0],src[1],src[2]); break;
-         CASE(4,2) dest[0]=stbi__compute_y2(src[0],src[1],src[2]), dest[1] = src[3]; break;
+         CASE(3,1) dest[0]=stbi__compute_y(src[0],src[1],src[2]); break;
+         CASE(3,2) dest[0]=stbi__compute_y(src[0],src[1],src[2]), dest[1] = 255; break;
+         CASE(4,1) dest[0]=stbi__compute_y(src[0],src[1],src[2]); break;
+         CASE(4,2) dest[0]=stbi__compute_y(src[0],src[1],src[2]), dest[1] = src[3]; break;
          CASE(4,3) dest[0]=src[0],dest[1]=src[1],dest[2]=src[2]; break;
          default: STBI_ASSERT(0);
       }
@@ -404,7 +423,55 @@ stream encode_as_pvrtc( const void *bgra, int w, int h, int bpp = 32, int qualit
     return out;    
 }
 
+stream encode_as_etc1_etcpak( const void *rgba, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
+    stream out = {};
+
+    bool alpha = false;
+    bool mipmap = false;
+    bool dither = quality >= 50;
+    /*int*/ quality = 0;
+
+    {
+        auto bmp = std::make_shared<Bitmap>( (const uint32_t *)rgba, w * h * (bpp/8), w, h, std::numeric_limits<uint>::max() );
+
+        auto bd = std::make_shared<BlockData>( bmp->Size(), false );
+        auto block = std::make_shared<BlockBitmap>( bmp, Channels::RGB );
+        if( dither ) block->Dither();
+        bd->Process( block->Data(), bmp->Size().x * bmp->Size().y / 16, 0, quality, Channels::RGB );
+        bd->Finish();
+
+        BlockDataPtr bda;        
+        if( alpha && bpp == 32 ) {
+            bda = std::make_shared<BlockData>( bmp->Size(), false );
+            auto blocka = std::make_shared<BlockBitmap>( bmp, Channels::Alpha );
+            // do not dither alpha
+            bda->Process( blocka->Data(), bmp->Size().x * bmp->Size().y / 16, 0, quality, Channels::RGB );
+            bda->Finish();
+        }
+
+        if( bd ) {
+            out.w = bd->m_size.x;
+            out.h = bd->m_size.y;
+            out.d = 1;
+            out.fmt = pvr3::table1::ETC1;
+            out.len = out.w * out.h / 2;
+            out.out = new unsigned char [ out.len ];
+            memcpy( out.out, (const char *)&bd->m_data[ bd->m_dataOffset ], out.len );
+        }        
+        if( bda ) {
+            // to be done
+        }
+
+        bd.reset();
+        bda.reset();        
+    }
+
+    return out;
+}
 stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
+
+    if( quality < 50 ) return encode_as_etc1_etcpak( rgba, w, h, bpp, quality * 2, reserved );
+    else quality = (quality - 50) * 2;
 
     stream out = {};
 
@@ -457,6 +524,7 @@ stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality
     out.len = len;
     return out;
 }
+
 
 bool save_pkm_etc1( std::string &out, const stream &sm, unsigned reserved ) {
     if( sm.is_valid() && sm.is_etc1() ) {

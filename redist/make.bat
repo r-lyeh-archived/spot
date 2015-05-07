@@ -20,7 +20,8 @@ if exist transfer.exe del transfer.exe
 if exist transfer.exe exit /b
 
 if not "%1"=="" (
-for %%i in (..\samples\%1.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* /Zi /Oy- /DDEBUG /MDd /EHsc /nologo /link setargv.obj
+rem for %%i in (..\samples\%1.cc) do cl /Fe%%~ni.exe %%i -I .. ..\spot*.c* /Zi /Oy- /DDEBUG /MTd /EHsc /nologo /link setargv.obj
+    for %%i in (..\samples\%1.cc) do cl /Fe%%~ni.exe %%i -I .. ..\spot*.c* /Ox /Oy /DNDEBUG /MT  /EHsc /nologo /link setargv.obj
 %*
 exit/b
 )
@@ -28,7 +29,7 @@ exit/b
 set devel=/Ox /Oy /DNDEBUG /MT
 
 del info.exe
-for %%i in (..\samples\info.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
+for %%i in (..\samples\info.cc) do cl /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
 info ..\images\panda.pug
 info ..\images\etc1.ktx
 info ..\images\pvrtc-2bpp-rgba.pvr
@@ -39,7 +40,7 @@ info ..\images\test-dxt5.crn
 rem exit/b
 
 del viewer.exe
-for %%i in (..\samples\viewer.cc) do cl /DUSE_OMP /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
+for %%i in (..\samples\viewer.cc) do cl /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
 viewer ..\images\field_128_cube.dds
 viewer ..\images\panda.pug
 viewer ..\images\etc1.ktx

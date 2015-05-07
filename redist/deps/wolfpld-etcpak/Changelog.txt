@@ -1,0 +1,2 @@
+- v1.0.1 switched from application to library. removed most threading code and etc1 decoding. reduced library size. switch to standard types.
+- v1.0.0 forked from [wolfpld-etcpak-8cd2a99cdc77]
