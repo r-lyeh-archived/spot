@@ -1,5 +1,4 @@
-Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-ci.org/r-lyeh/spot.svg?branch=master" align="right" /></a>
-=====
+## Sp:cyclone:t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-ci.org/r-lyeh/spot.svg?branch=master" align="right" /></a>
 
 - Spot is a compact and embeddable pixel/image library (C++11).
 - Spot supports both RGBA/HSLA pixel types.
@@ -9,7 +8,7 @@ Sp◉t <a href="https://travis-ci.org/r-lyeh/spot"><img src="https://api.travis-
 - Spot is self-contained. All libraries are included and amalgamated.
 - Spot is tiny. A couple of source files.
 - Spot is cross-platform.
-- Spot is BOOST licensed.
+- Spot is zlib/libpng licensed.
 
 ## File format support
 
@@ -60,7 +59,7 @@ class image : public std::vector<color>
 
     bool load( const void *ptr, size_t len, bool mirror_w = false, bool mirror_h = false );
     bool load( const std::string &filename, bool mirror_w = false, bool mirror_h = false );
-    
+
     bool save( const std::string &filename ) const;
 
     bool save_as_bmp( const std::string &filename ) const;
@@ -185,7 +184,7 @@ class image : public std::vector<color>
 - endianness issues
 
 ## licenses
-- [spot](https://github.com/r-lyeh/spot) (BOOST license).
+- [spot](https://github.com/r-lyeh/spot) (ZLIB license).
 - [crn2dds](redist/deps/crn2dds) by r-lyeh, SpartanJ and Evan Parker (Public Domain).
 - [crnlib](https://code.google.com/p/crunch/), by Rich Geldreich (ZLIB license).
 - [DDS writer](http://www.lonesock.net/soil.html) by Jonathan Dummer (Public Domain).
@@ -204,10 +203,12 @@ class image : public std::vector<color>
 - [unifont](https://github.com/r-lyeh/unifont) (ZLIB license).
 
 ## notes
-- Samples are Public Domain licensed. Samples use CImg.h by David Tschumperle (CeCILL-C license) to display images. 
+- Samples are Public Domain licensed. Samples use CImg.h by David Tschumperle (CeCILL-C license) to display images.
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.0.9 (2015/05/12)
+  - safer decoding on invalid images
 - v2.0.8 (2015/05/07)
   - faster etc1 encoding on low quality settings (using custom etcpak library)
 - v2.0.7 (2015/05/06)

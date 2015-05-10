@@ -1,4 +1,4 @@
-/* Handy pixel/color and texture/image classes. BOOST licensed.
+/* Handy pixel/color and texture/image classes. zlib/libpng licensed.
  * - rlyeh ~~ listening to Twilightning - Painting the blue eyes
  *
  * Check spot.cpp for a @todo list.
@@ -17,7 +17,26 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.0.8"
+#define SPOT_VERSION "2.0.9" // " (2015/05/12) - safer decoding on invalid images"
+/*
+#define SPOT_VERSION "2.0.8" // " (2015/05/07) - faster etc1 encoding on low quality settings (using custom etcpak library)"
+#define SPOT_VERSION "2.0.7" // " (2015/05/06) - stb image library defined as static (fixes multiple symbol definitions in large projects)"
+#define SPOT_VERSION "2.0.7" // " (2015/05/06) - upgraded tools"
+#define SPOT_VERSION "2.0.6" // " (2015/05/05) - print() method added"
+#define SPOT_VERSION "2.0.5" // " (2015/04/27) - pvrtc encoder: c++0x support"
+#define SPOT_VERSION "2.0.4" // " (2015/04/27) - fixed etc1 encoder"
+#define SPOT_VERSION "2.0.4" // " (2015/04/27) - fixed ya()/a() vector size"
+#define SPOT_VERSION "2.0.3" // " (2015/04/24) - pvrtc encoder"
+#define SPOT_VERSION "2.0.2" // " (2015/04/23) - better ktx/pvr3 file support"
+#define SPOT_VERSION "2.0.2" // " (2015/04/23) - pvrtc decode stream support"
+#define SPOT_VERSION "2.0.2" // " (2015/04/23) - android support (again)"
+#define SPOT_VERSION "2.0.2" // " (2015/04/23) - increased tests"
+#define SPOT_VERSION "2.0.1" // " (2015/04/23) - bugfixed monochromatic images"
+#define SPOT_VERSION "2.0.0" // " (2015/04/22) - etc1 encode/decode stream support"
+#define SPOT_VERSION "2.0.0" // " (2015/04/22) - pvr3/ktx/pkm load/save file support"
+#define SPOT_VERSION "2.0.0" // " (2015/04/22) - a few optimizations"
+#define SPOT_VERSION "1.0.0" // " (2014/xx/xx) - initial commit"
+*/
 
 #include <stddef.h>
 #include <string.h>
@@ -869,7 +888,7 @@ namespace spot
                 pixels.push_back( x );
             }
             return pixels;
-        }        
+        }
 
         std::vector<unsigned char> rgb() const {
             rect temp = this->to_rgba();
@@ -1228,7 +1247,7 @@ namespace spot
 
         void print( int x, int y, const char *utf8 );
 
-        private: 
+        private:
         void import_texture( const stream &st ) {
             if( st.fmt == RGB_888 ) {
                 uint8_t *rgb = (uint8_t*)st.in;

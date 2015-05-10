@@ -1,7 +1,7 @@
 /** this is an amalgamated file. do not edit.
  */
 
-/* Handy pixel/color and texture/image classes. BOOST licensed.
+/* Handy pixel/color and texture/image classes. zlib/libpng licensed.
  * - rlyeh ~~ listening to Twilightning - Painting the blue eyes
 
  *   Hue - Think of a color wheel. Around 0 and 255 are reds 85 are greens, 170 are blues. Use anything in between 0-255. Values above and below will be modulus 255.
@@ -292,7 +292,7 @@ static stbi_uc *decode_etc1_stream(const void *stream, int len, int width, int h
         // pixelSize 2 is an GL_UNSIGNED_SHORT_5_6_5 image, 3 is a GL_BYTE RGB image.
         if( 0 == etc1_decode_image((const etc1_byte*)stream, (etc1_byte*)unpacked, width, height, 3, stride) ) {
             if( zlen ) *zlen = size;
-            return (stbi_uc *)unpacked;            
+            return (stbi_uc *)unpacked;
         }
         free( unpacked );
     }
@@ -406,7 +406,7 @@ stream encode_as_pvrtc( const void *bgra, int w, int h, int bpp = 32, int qualit
             PvrTcEncoder::EncodeRgb4Bpp(pvrtc, bitmap);
         /*} else {
             out.fmt = pvr3::table1::PVRTC_2BPP_RGB;
-            PvrTcEncoder::EncodeRgb2Bpp(pvrtc, bitmap);            
+            PvrTcEncoder::EncodeRgb2Bpp(pvrtc, bitmap);
         }*/
     } else if( bpp == 32 ) {
         Javelin::RgbaBitmap bitmap( w, h );
@@ -416,11 +416,11 @@ stream encode_as_pvrtc( const void *bgra, int w, int h, int bpp = 32, int qualit
             PvrTcEncoder::EncodeRgba4Bpp(pvrtc, bitmap);
         /*} else {
             out.fmt = pvr3::table1::PVRTC_2BPP_RGBA;
-            PvrTcEncoder::EncodeRgba2Bpp(pvrtc, bitmap);            
+            PvrTcEncoder::EncodeRgba2Bpp(pvrtc, bitmap);
         }*/
-    } 
+    }
 
-    return out;    
+    return out;
 }
 
 stream encode_as_etc1_etcpak( const void *rgba, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
@@ -440,7 +440,7 @@ stream encode_as_etc1_etcpak( const void *rgba, int w, int h, int bpp = 32, int 
         bd->Process( block->Data(), bmp->Size().x * bmp->Size().y / 16, 0, quality, Channels::RGB );
         bd->Finish();
 
-        BlockDataPtr bda;        
+        BlockDataPtr bda;
         if( alpha && bpp == 32 ) {
             bda = std::make_shared<BlockData>( bmp->Size(), false );
             auto blocka = std::make_shared<BlockBitmap>( bmp, Channels::Alpha );
@@ -457,13 +457,13 @@ stream encode_as_etc1_etcpak( const void *rgba, int w, int h, int bpp = 32, int 
             out.len = out.w * out.h / 2;
             out.out = new unsigned char [ out.len ];
             memcpy( out.out, (const char *)&bd->m_data[ bd->m_dataOffset ], out.len );
-        }        
+        }
         if( bda ) {
             // to be done
         }
 
         bd.reset();
-        bda.reset();        
+        bda.reset();
     }
 
     return out;
@@ -484,7 +484,7 @@ stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality
     // } */
 
     // Alloc mem
-    unsigned pitch = w * (bpp / 8); 
+    unsigned pitch = w * (bpp / 8);
     unsigned blockw = w/4;
     unsigned blockh = h/4;
     size_t len = blockw * blockh * 8;
@@ -505,7 +505,7 @@ stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality
     else                                 params.m_quality = rg_etc1::cLowQuality,    params.m_dithering = false;
 
     // RGBA to ETC1
-#pragma omp parallel for 
+#pragma omp parallel for
     for( unsigned y = 0; y < blockh; y++ ) {
         for( unsigned x = 0; x < blockw; x++ ) {
             uint32_t block[16];
@@ -552,7 +552,7 @@ bool save_pvr( std::string &out, const stream &sm, unsigned reserved = 0 ) {
         pvr.hd.flags = tole32(0);                // 0x02, colour values within the texture have been pre-multiplied by the alpha values
         pvr.hd.pixel_format_1 = tole32(sm.fmt);  // see table1 above
         pvr.hd.pixel_format_2 = tole32(0);       // 0
-        pvr.hd.color_space = tole32(0);          // 0 linear rgb, 1 standard rgb 
+        pvr.hd.color_space = tole32(0);          // 0 linear rgb, 1 standard rgb
         pvr.hd.channel_type = tole32(0);         // see table2 above
         pvr.hd.height = tole32(sm.h);            // 1d texture
         pvr.hd.width = tole32(sm.w);             // 2d texture; >= 1
@@ -574,9 +574,9 @@ bool save_ktx( std::string &out, const stream &sm, unsigned reserved = 0 ) {
     if( sm.is_valid() ) {
         ktx k;
         auto &hd = k.hd;
-        hd.identifier0 = tole32(0x58544bab); 
-        hd.identifier1 = tole32(0xbb313120); 
-        hd.identifier2 = tole32(0xa1a0a0d);  
+        hd.identifier0 = tole32(0x58544bab);
+        hd.identifier1 = tole32(0xbb313120);
+        hd.identifier2 = tole32(0xa1a0a0d);
         hd.endianness = tole32(0x4030201);
         hd.glType = tole32(0x0); // table 8.2 of opengl 4.4 spec; UNSIGNED_BYTE, UNSIGNED_SHORT_5_6_5, etc.)
         hd.glTypeSize = tole32(0x1); // 1 for compressed data
@@ -634,7 +634,7 @@ std::string save_pkm_etc1( const stream &sm, unsigned reserved = 0 ) {
 
 .ktx
     [header]
-    
+
     for each keyValuePair that fits in bytesOfKeyValueData
         uint32_t   keyAndValueByteSize
         uint8_t    keyAndValue[keyAndValueByteSize]
@@ -642,7 +642,7 @@ std::string save_pkm_etc1( const stream &sm, unsigned reserved = 0 ) {
     end
 
     for each mipmap_level in numberOfMipmapLevels* {
-        uint32_t imageSize; 
+        uint32_t imageSize;
         for each array_element in numberOfArrayElements* {
            for each face in numberOfFaces {
                for each z_slice in pixelDepth* {
@@ -656,7 +656,7 @@ std::string save_pkm_etc1( const stream &sm, unsigned reserved = 0 ) {
            }
         }
         uint8_t mipPadding[3 - ((imageSize + 3) % 4)]
-    } 
+    }
 
     * Replace with 1 if this field is 0.
     ** Uncompressed texture data matches a GL_UNPACK_ALIGNMENT of 4.
@@ -672,7 +672,7 @@ namespace spot
             union autodetect {
                 int word;
                 char byte[ sizeof(int) ];
-                autodetect() : word(1) 
+                autodetect() : word(1)
                 {}
             } _;
             bool is_big = _.byte[0] == 0;
@@ -762,7 +762,7 @@ namespace spot
                 }
             }
             return std::string();
-        }        
+        }
 
         std::string encode_ktx( unsigned w, unsigned h, const void *data, unsigned quality ) {
             if( w && h && data && quality ) {
@@ -776,7 +776,7 @@ namespace spot
                 return ss.str();
             }
             return std::string();
-        }        
+        }
 
         std::string encode_pvr( unsigned w, unsigned h, const void *data, unsigned quality ) {
             if( w && h && data && quality ) {
@@ -789,7 +789,7 @@ namespace spot
                 return ss.str();
             }
             return std::string();
-        }        
+        }
 
         std::string encode_pkm( unsigned w, unsigned h, const void *data, unsigned quality ) {
             if( w && h && data && quality ) {
@@ -801,7 +801,7 @@ namespace spot
                 return ss.str();
             }
             return std::string();
-        }        
+        }
 
         /*
             transcoding
@@ -835,14 +835,14 @@ namespace spot
                 spot::image img = tx;
                 display( img );
             }
-        }        
+        }
         */
 
         bool writefile( const std::string &filename, const std::string &data ) {
             if( !data.empty() ) {
                 std::ofstream ofs( filename.c_str(), std::ios::binary );
                 ofs.write( &data[0], data.size() );
-                return ofs.good();                
+                return ofs.good();
             }
             return false;
         }
@@ -874,6 +874,9 @@ namespace spot
         sm.in = src;
         sm.len = len;
 
+        if( !src ) return false;
+        if( !len ) return false;
+
         const char *src8 = (const char *)src;
 
         // crn?
@@ -881,7 +884,7 @@ namespace spot
         if( is_crn ) {
             sm.w = (( src8[0xC] << 8) | src8[0xD] );
             sm.h = (( src8[0xE] << 8) | src8[0xF] );
-            sm.comp = 4; 
+            sm.comp = 4;
             sm.hint = IS_CRN;
             sm.deleter = STBI_DELETER;
             return true;
@@ -991,7 +994,7 @@ namespace spot
             dst.error = "Error: invalid pointer provided";
             return false;
         }
-            
+
         if( !src.len || !dst.len ) {
             dst.error = "Error: invalid size provided";
             return false;
@@ -1005,7 +1008,7 @@ namespace spot
             if( !info( dst, src.in, src.len ) ) {
                 return false;
             }
-        } 
+        }
 
         imageWidth = src.w;
         imageHeight = src.h;
@@ -1016,7 +1019,7 @@ namespace spot
 
         switch( imageHint ) {
         default:
-        break; 
+        break;
         case IS_CRN :{
             std::string dds;
             if( crn2dds( dds, src.in, src.len ) ) {
@@ -1025,7 +1028,7 @@ namespace spot
                 imageComp = 4;
             }
         }
-        break; 
+        break;
         case IS_PKM :{
             unsigned int zlen;
             const stbi_uc *data = (const stbi_uc *)src.in;
@@ -1034,7 +1037,7 @@ namespace spot
             deleter = FREE_DELETER;
             imageComp = 3;
         }
-        break; 
+        break;
         case IS_KTX :{
             unsigned int zlen;
             const stbi_uc *data = (const stbi_uc *)src.in;
@@ -1048,26 +1051,26 @@ namespace spot
             }
             deleter = FREE_DELETER;
         }
-        break; 
+        break;
         case IS_PVR3: {
             unsigned int zlen;
             const stbi_uc *data = (const stbi_uc *)src.in;
             size_t offset = sizeof(pvr3::header) + ((pvr3::header *)src.in)->metadata_size;
             /****/ if( src.fmt == pvr3::table1::ETC1 ) {
                 imageuc = decode_etc1_stream( &data[offset], src.len - offset, imageWidth, imageHeight, &zlen);
-                imageComp = 3;                
+                imageComp = 3;
             } else if( src.fmt <= pvr3::table1::PVRTC_4BPP_RGBA ) {
                 imageuc = decode_pvrtc_stream( &data[offset], src.len - offset, imageWidth, imageHeight, src.fmt, &zlen);
-                imageComp = (src.fmt == pvr3::table1::PVRTC_2BPP_RGBA || pvr3::table1::PVRTC_4BPP_RGBA) ? 4 : 3;                
+                imageComp = (src.fmt == pvr3::table1::PVRTC_2BPP_RGBA || pvr3::table1::PVRTC_4BPP_RGBA) ? 4 : 3;
             }
             deleter = FREE_DELETER;
         }
-        break; 
+        break;
         case IS_STBI: {
             imageuc = stbi_load_from_memory( (const stbi_uc *)src.in, src.len, &imageWidth, &imageHeight, &imageComp, src.comp < 3 ? 3 : src.comp );
             imageComp = src.comp < 3 ? 3 : src.comp;
             deleter = STBI_DELETER;
-            // if it is a .pug file, then decode alpha 
+            // if it is a .pug file, then decode alpha
             const char *magic = (const char *)src.in + src.len - 4;
             if( magic[0] == 'p' && magic[1] == 'u' && magic[2] == 'g' && magic[3] == '1' ) {
                 imageComp = 4;
@@ -1083,15 +1086,15 @@ namespace spot
                     }
                     stbi_image_free( alpha );
                 }
-            }  
+            }
         }
-        break; 
+        break;
         case IS_WEBP: {
             imageuc = (stbi_uc *) WebPDecodeRGBA( (const uint8_t *)src.in, src.len, &imageWidth, &imageHeight );
             deleter = FREE_DELETER;
             imageComp = 4;
         }
-        break; 
+        break;
         case IS_SVG :{
             // Load SVG, parse and rasterize
             char *str = new char[ src.len + 1 ];
@@ -1177,8 +1180,8 @@ namespace spot
                     if( comp  ) *comp = size_t(out.comp);
                     if( error ) *error = out.error;
                     return dst;
-                } 
-            }            
+                }
+            }
         }
         return std::vector<unsigned char>();
     }
@@ -1190,7 +1193,7 @@ namespace spot
     }
 
     std::vector<unsigned int> decode32( const void *ptr, size_t size, size_t *w, size_t *h, size_t *comp, std::string *error ) {
-        std::vector<unsigned char> decoded = decode8( ptr, size, w, h, comp, error ); 
+        std::vector<unsigned char> decoded = decode8( ptr, size, w, h, comp, error );
         std::vector<unsigned int> out;
         if( !decoded.empty() ) {
             out.reserve( decoded.size() / 4 );

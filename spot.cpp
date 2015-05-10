@@ -1,7 +1,7 @@
 /** this is an amalgamated file. do not edit.
  */
 
-/* Handy pixel/color and texture/image classes. BOOST licensed.
+/* Handy pixel/color and texture/image classes. zlib/libpng licensed.
  * - rlyeh ~~ listening to Twilightning - Painting the blue eyes
 
  *   Hue - Think of a color wheel. Around 0 and 255 are reds 85 are greens, 170 are blues. Use anything in between 0-255. Values above and below will be modulus 255.
@@ -40853,6 +40853,9 @@ namespace spot
 		sm = blank;
 		sm.in = src;
 		sm.len = len;
+
+		if( !src ) return false;
+		if( !len ) return false;
 
 		const char *src8 = (const char *)src;
 
