@@ -207,6 +207,8 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.1.0 (2015/09/28)
+  - faster image pasting
 - v2.0.9 (2015/05/12)
   - safer decoding on invalid images
 - v2.0.8 (2015/05/07)
