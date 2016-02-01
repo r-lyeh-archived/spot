@@ -207,32 +207,15 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
-- v2.1.0 (2015/09/28)
-  - faster image pasting
-- v2.0.9 (2015/05/12)
-  - safer decoding on invalid images
-- v2.0.8 (2015/05/07)
-  - faster etc1 encoding on low quality settings (using custom etcpak library)
-- v2.0.7 (2015/05/06)
-  - stb image library defined as static (fixes multiple symbol definitions in large projects)
-  - upgraded tools
-- v2.0.6 (2015/05/05)
-  - print() method added
-- v2.0.5 (2015/04/27)
-  - pvrtc encoder: c++0x support
-- v2.0.4 (2015/04/27)
-  - fixed etc1 encoder
-  - fixed ya()/a() vector size
-- v2.0.3 (2015/04/24)
-  - pvrtc encoder
-- v2.0.2 (2015/04/23)
-  - better ktx/pvr3 file support
-  - pvrtc decode stream support
-  - android support (again)
-  - increased tests
-- v2.0.1 (2015/04/23)
-  - bugfixed monochromatic images
-- v2.0.0 (2015/04/22)
-  - etc1 encode/decode stream support
-  - pvr3/ktx/pkm load/save file support
-  - a few optimizations
+- v2.1.1 (2016/02/01): update nanosvg; add small optimizations
+- v2.1.0 (2015/09/28): faster image pasting
+- v2.0.9 (2015/05/12): safer decoding on invalid images
+- v2.0.8 (2015/05/07): faster etc1 encoding on low quality settings (using custom etcpak library)
+- v2.0.7 (2015/05/06): stb image library defined as static (fixes multiple symbol definitions in large projects); upgraded tools
+- v2.0.6 (2015/05/05): print() method added
+- v2.0.5 (2015/04/27): pvrtc encoder; c++0x support
+- v2.0.4 (2015/04/27): fixed etc1 encoder; fixed ya()/a() vector size
+- v2.0.3 (2015/04/24): pvrtc encoder
+- v2.0.2 (2015/04/23): better ktx/pvr3 file support; pvrtc decode stream support; android support (again); increased tests
+- v2.0.1 (2015/04/23): bugfixed monochromatic images
+- v2.0.0 (2015/04/22): etc1 encode/decode stream support; pvr3/ktx/pkm load/save file support; a few optimizations

@@ -17,7 +17,8 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.1.0" /* (2015/09/28) - faster image pasting
+#define SPOT_VERSION "2.1.1" /* (2016/02/01) - update nanosvg; add small optimizations
+#define SPOT_VERSION "2.1.0" // (2015/09/28) - faster image pasting
 #define SPOT_VERSION "2.0.9" // (2015/05/12) - safer decoding on invalid images
 #define SPOT_VERSION "2.0.8" // (2015/05/07) - faster etc1 encoding on low quality settings (using custom etcpak library)
 #define SPOT_VERSION "2.0.7" // (2015/05/06) - stb image library defined as static (fixes multiple symbol definitions in large projects)
@@ -156,7 +157,8 @@ namespace spot
             return *this;
         }
         pixel to_hsla() const {
-            float rgb[3] = { r / 255.f, g / 255.f, b / 255.f };
+            const float inv = 1.f / 255.f;
+            float rgb[3] = { r * inv, g * inv, b * inv };
             float hsl[3];
             rgb2hsl( rgb, hsl );
             return pixel( hsl[0] * 255.f, hsl[1] * 255.f, hsl[2] * 255.f, a );
@@ -1315,8 +1317,7 @@ namespace spot
         // import/export
 
         bool load( const texture &tx ) {
-            this->resize( ( (d = tx.d) > 0 ? tx.d : 1 ) * (w = tx.w) * (h = tx.h) );
-            this->resize(0);
+            this->reserve(((d = tx.d) > 0 ? tx.d : 1) * (w = tx.w) * (h = tx.h));
             for( auto &pixel : tx ) {
                 spot::color color = pixel;
                 this->push_back( color );

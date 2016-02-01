@@ -1313,7 +1313,6 @@ namespace spot
 
         h = 0; // default to black
         s = 0;
-        l = 0;
         v = ( r > g ? r : g );
         v = ( v > b ? v : b );
         m = ( r < g ? r : g );
@@ -1352,8 +1351,9 @@ namespace spot
     }
 
     pixel::operator color() const {
+        const float inv = 1.f / 255.f;
         pixel c = this->clamp().to_hsla();
-        return spot::color(c.r / 255.f, c.g / 255.f, c.b / 255.f, c.a / 255.f);
+        return spot::color(c.r * inv, c.g * inv, c.b * inv, c.a * inv);
     }
 
     static pixel rgba8888( unsigned char r, unsigned char g, unsigned char b, unsigned char a ) {
