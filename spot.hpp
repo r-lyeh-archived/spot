@@ -17,7 +17,8 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.1.1" /* (2016/02/01) - update nanosvg; add small optimizations
+#define SPOT_VERSION "2.1.2" /* (2016/02/04) - flif and exr loading support
+#define SPOT_VERSION "2.1.1" // (2016/02/01) - update nanosvg; add small optimizations
 #define SPOT_VERSION "2.1.0" // (2015/09/28) - faster image pasting
 #define SPOT_VERSION "2.0.9" // (2015/05/12) - safer decoding on invalid images
 #define SPOT_VERSION "2.0.8" // (2015/05/07) - faster etc1 encoding on low quality settings (using custom etcpak library)
@@ -55,12 +56,6 @@
 #endif
 // }
 
-// forward declarations {
-extern "C" int stbi_write_bmp( char const *filename, int w, int h, int comp, const void *data );
-extern "C" int stbi_write_dds( char const *filename, int w, int h, int comp, const void *data );
-extern "C" int stbi_write_tga( char const *filename, int w, int h, int comp, const void *data );
-// }
-
 //#include "redist/deps/vector_view.hpp"
 
 namespace spot
@@ -89,6 +84,8 @@ namespace spot
         RGB_ETC1,
         //RGB_565
         //RGBA_5551
+        RGB_888F,
+        RGBA_8888F,
     };
 
     struct stream {
@@ -107,8 +104,14 @@ namespace spot
         bool is_pvrtc() const;
     };
 
+    int write_bmp( char const *filename, int w, int h, int comp, const void *data );
+    int write_dds( char const *filename, int w, int h, int comp, const void *data );
+    int write_tga( char const *filename, int w, int h, int comp, const void *data );
+
     bool info( stream &nfo, const void *data, size_t len );
+    bool infof( stream &nfo, const void *data, size_t len );
     bool decode( stream &dst, const stream &src );
+    bool decodef( stream &dst, const stream &src );
 
     std::vector<unsigned char> decode8(
         const void *ptr, size_t size,
@@ -123,6 +126,14 @@ namespace spot
         size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
 
     std::vector<unsigned int> decode32(
+        const std::string &filename,
+        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
+
+    std::vector<float> decodef(
+        const void *ptr, size_t size,
+        size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
+
+    std::vector<float> decodef(
         const std::string &filename,
         size_t *w = 0, size_t *h = 0, size_t *comp = 0, std::string *error = 0 );
 
@@ -619,16 +630,40 @@ namespace spot
 
         // import/export
 
-        bool load( const std::string &pathfile) {
-            size_t comp;
-            std::string error = image_load( pathfile, &w, &h, &comp, *this );
-            return error.empty() ? true : false;
-        }
-
         bool load( const void *ptr, size_t len) {
             size_t comp;
             std::string error = image_load( (const unsigned char *)ptr, len, &w, &h, &comp, *this );
             return error.empty() ? true : false;
+        }
+
+        bool load( const std::string &pathfile) {
+            if( pathfile.empty() ) {
+                return /*"Error! empty filename",*/ false;
+            }
+            std::ifstream ifs( pathfile.c_str(), std::ios::binary );
+            if( !ifs.good() ) {
+                return /*"Error! unable to read file: " + pathfile*/ false;
+            }
+            std::vector<char> buffer( (std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+            return load( buffer.data(), buffer.size() );
+        }
+
+        bool load_hdr( const void *ptr, size_t len) {
+            size_t comp;
+            std::string error = image_load_hdr( (const unsigned char *)ptr, len, &w, &h, &comp, *this );
+            return error.empty() ? true : false;
+        }
+
+        bool load_hdr( const std::string &pathfile) {
+            if( pathfile.empty() ) {
+                return /*"Error! empty filename",*/ false;
+            }
+            std::ifstream ifs( pathfile.c_str(), std::ios::binary );
+            if( !ifs.good() ) {
+                return /*"Error! unable to read file: " + pathfile*/ false;
+            }
+            std::vector<char> buffer( (std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+            return load_hdr( buffer.data(), buffer.size() );
         }
 
         bool save( const std::string &filename, unsigned quality = SPOT_DEFAULT_QUALITY ) {
@@ -654,7 +689,7 @@ namespace spot
                 return false;
             }
             std::vector<unsigned char> pixels = rgba();
-            return ( stbi_write_bmp( filename.c_str(), w, h, 4, &pixels[0] ) != 0 );
+            return ( write_bmp( filename.c_str(), w, h, 4, &pixels[0] ) != 0 );
         }
 
         bool save_as_dds( const std::string &filename ) const {
@@ -662,7 +697,7 @@ namespace spot
                 return false;
             }
             std::vector<unsigned char> pixels = rgba();
-            return ( stbi_write_dds( filename.c_str(), w, h, 4, &pixels[0] ) != 0 );
+            return ( write_dds( filename.c_str(), w, h, 4, &pixels[0] ) != 0 );
         }
 
         bool save_as_tga( const std::string &filename ) const {
@@ -670,7 +705,7 @@ namespace spot
                 return false;
             }
             std::vector<unsigned char> pixels = rgba();
-            return ( stbi_write_tga( filename.c_str(), w, h, 4, &pixels[0] ) != 0 );
+            return ( write_tga( filename.c_str(), w, h, 4, &pixels[0] ) != 0 );
         }
 
         std::string encode_as_png( unsigned stride = 4 ) const {
@@ -786,13 +821,17 @@ namespace spot
 
         // helpers
 
-        std::string image_load( const unsigned char *ptr, size_t size, size_t *w, size_t *h, size_t *comp, std::vector<pixel> &image )
+        template<typename COLOR>
+        std::string image_load( const unsigned char *ptr, size_t size, size_t *w, size_t *h, size_t *comp, std::vector<COLOR> &image )
         {
             std::string error;
             std::vector<unsigned char> data = spot::decode8( ptr, size, w, h, comp, &error );
 
-            if( data.empty() || error.size() ) {
+            if (error.size()) {
                 return error;
+            }
+            if (data.empty()) {
+                return "failed to decode image";
             }
 
             image.resize( (*w) * (*h) );
@@ -820,21 +859,40 @@ namespace spot
         }
 
         template<typename COLOR>
-        std::string image_load( const std::string &pathfile, size_t *w, size_t *h, size_t *comp, std::vector<COLOR> &image )
+        std::string image_load_hdr( const unsigned char *ptr, size_t size, size_t *w, size_t *h, size_t *comp, std::vector<COLOR> &image )
         {
-            if( pathfile.empty() ) {
-                return "Error! empty filename";
+            std::string error;
+            std::vector<float> data = spot::decodef( ptr, size, w, h, comp, &error );
+
+            if (error.size()) {
+                return error;
+            }
+            if (data.empty()) {
+                return "failed to decode image";
             }
 
-            std::ifstream ifs( pathfile.c_str(), std::ios::binary );
-            if( !ifs.good() ) {
-                return "Error! unable to read file: " + pathfile;
+            image.resize( (*w) * (*h) );
+
+            const float *dataf( data.data() );
+
+            if( *comp == 3 )
+            for( size_t i = 0, e = image.size(); i < e; ++i ) {
+                float r = *dataf++;
+                float g = *dataf++;
+                float b = *dataf++;
+                image.at(i) = color( r, g, b, 1 );
             }
 
-            std::vector<char> buffer( (std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+            if( *comp == 4 )
+            for( size_t i = 0, e = image.size(); i < e; ++i ) {
+                float r = *dataf++;
+                float g = *dataf++;
+                float b = *dataf++;
+                float a = *dataf++;
+                image.at(i) = color( r, g, b, a );
+            }
 
-            std::string err = image_load( (const unsigned char *)buffer.data(), buffer.size(), w, h, comp, image );
-            return err.empty() ? std::string() : ( err + ", while reading file: " + pathfile );
+            return std::string();
         }
 
         // debug 2d
@@ -1293,12 +1351,12 @@ namespace spot
         image( const rect<color> &rt ) : rect<color>(rt)
         {}
 
-        image( const std::string &pathfile ) : rect<color>() {
-            load( texture(pathfile) );
+        image( const void *ptr, size_t len ) : rect<color>() {
+            load( ptr, len );
         }
 
-        image( const void *ptr, size_t len ) : rect<color>() {
-            load( texture(ptr, len) );
+        image( const std::string &pathfile ) : rect<color>() {
+            load( pathfile );
         }
 
         image( const texture &tx ) : rect<color>() {
@@ -1316,7 +1374,29 @@ namespace spot
 
         // import/export
 
+        bool load( const void *ptr, size_t len ) {
+            rect< color > *self = this;
+            if( !self->load( ptr, len ) ) {
+                self->load_hdr( ptr, len );
+                for( auto &color : *this ) {
+                    //color = color.to_hsla();
+                }
+                return !this->empty();
+            }
+            return false;
+        }
+
+        bool load( const std::string &pathfile ) {
+            std::ifstream ifs( pathfile.c_str(), std::ios::binary );
+            if( !ifs.good() ) {
+                return false; /*"Error! unable to read file: " + pathfile*/
+            }
+            std::vector<char> buffer( (std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+            return load( buffer.data(), buffer.size() );
+        }
+
         bool load( const texture &tx ) {
+            this->clear();
             this->reserve(((d = tx.d) > 0 ? tx.d : 1) * (w = tx.w) * (h = tx.h));
             for( auto &pixel : tx ) {
                 spot::color color = pixel;

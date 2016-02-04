@@ -96,7 +96,7 @@ static int outfile(char const *filename, int rgb_dir, int vdir, int x, int y, in
    return f != NULL;
 }
 
-int stbi_write_bmp(char const *filename, int x, int y, int comp, const void *data)
+static int stbi_write_bmp(char const *filename, int x, int y, int comp, const void *data)
 {
    int pad = (-x*3) & 3;
    return outfile(filename,-1,-1,x,y,comp,(void *) data,0,pad,
@@ -105,7 +105,7 @@ int stbi_write_bmp(char const *filename, int x, int y, int comp, const void *dat
             40, x,y, 1,24, 0,0,0,0,0,0);             // bitmap header
 }
 
-int stbi_write_tga(char const *filename, int x, int y, int comp, const void *data)
+static int stbi_write_tga(char const *filename, int x, int y, int comp, const void *data)
 {
    int has_alpha = !(comp & 1);
    return outfile(filename, -1,-1, x, y, comp, (void *) data, has_alpha, 0,
@@ -192,7 +192,7 @@ static unsigned int stbi__zhash(unsigned char *data)
 
 #define stbi__ZHASH   16384
 
-unsigned char * stbi_zlib_compress(unsigned char *data, int data_len, int *out_len, int quality)
+static unsigned char * stbi_zlib_compress(unsigned char *data, int data_len, int *out_len, int quality)
 {
    static unsigned short lengthc[] = { 3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258, 259 };
    static unsigned char  lengtheb[]= { 0,0,0,0,0,0,0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4,  4,  5,  5,  5,  5,  0 };
@@ -295,7 +295,7 @@ unsigned char * stbi_zlib_compress(unsigned char *data, int data_len, int *out_l
    return (unsigned char *) stbi__sbraw(out);
 }
 
-unsigned int stbi__crc32(unsigned char *buffer, int len)
+static unsigned int stbi__crc32(unsigned char *buffer, int len)
 {
    static unsigned int crc_table[256];
    unsigned int crc = ~0u;
@@ -417,7 +417,7 @@ unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, in
    return out;
 }
 
-int stbi_write_png(char const *filename, int x, int y, int comp, const void *data, int stride_bytes)
+static int stbi_write_png(char const *filename, int x, int y, int comp, const void *data, int stride_bytes)
 {
    FILE *f;
    int len;

@@ -66,7 +66,6 @@
  *  hsl 6 hues: red, yellow, green, cyan, blue, purple
  *  rgy
  *  http://en.wikipedia.org/wiki/HSL_color_space#Disadvantages
- *  https://github.com/aras-p/miniexr/blob/master/miniexr.cpp
  *  http://cgit.haiku-os.org/haiku/plain/src/add-ons/translators/exr/openexr/half/half.h
  *  ftp://www.fox-toolkit.org/pub/fasthalffloatconversion.pdf
  *  std::string str() const { return std::string(); } //#ffffffff
@@ -159,6 +158,19 @@ namespace spot {
 
 #include "deps/unifont/unifont.hpp"
 
+#include "deps/tinyexr/tinyexr.cc"
+
+#include "deps/flif/src/library/flif_dec.h"
+#include "deps/flif/src/io.cpp"
+#include "deps/flif/src/maniac/bit.cpp"
+#include "deps/flif/src/maniac/chance.cpp"
+#include "deps/flif/src/library/flif-interface_dec.cpp"
+#include "deps/flif/src/image/crc32k.cpp"
+#include "deps/flif/src/image/color_range.cpp"
+#include "deps/flif/src/flif-dec.cpp"
+#include "deps/flif/src/common.cpp"
+#include "deps/flif/src/maniac/symbol.cpp"
+#include "deps/flif/src/transform/factory.cpp"
 
 // portable endianness stuff. rlyeh, public domain {
 #include <stdint.h>
@@ -191,9 +203,16 @@ uint32_t tole32( uint32_t x ) {
 #define  ntoh32(x) ( IS_BIG_ENDIAN ? (x) : swap32(x) )
 // }
 
-extern "C"
-int stbi_write_dds( char const *filename, int w, int h, int comp, const void *data ) {
+namespace spot {
+int write_dds( char const *filename, int w, int h, int comp, const void *data ) {
    return save_image_as_DDS( filename, w, h, comp, (const unsigned char *const) data );
+}
+int write_bmp( char const *filename, int w, int h, int comp, const void *data ) {
+   return stbi_write_bmp( filename, w, h, comp, data );
+}
+int write_tga( char const *filename, int w, int h, int comp, const void *data ) {
+   return stbi_write_tga( filename, w, h, comp, data );
+}
 }
 
 extern "C"
@@ -205,13 +224,17 @@ uint8_t* WebPDecodeRGBA(const uint8_t* data, size_t data_size, int* width, int* 
 extern "C"
 size_t WebPEncodeRGBA(const unsigned char* rgba, int width, int height, int stride, float quality_factor, unsigned char** output);
 
-#ifdef min
-#undef min
-#endif
 
-#ifdef max
-#undef max
-#endif
+// Callback function: converts (partially) decoded image/animation to a/several SDL_Texture(s),
+//                    resizes the viewer window if needed, and calls draw_image()
+// Input arguments are: quality (0..10000), current position in the .flif file
+// Output is the desired minimal quality before doing the next callback
+#pragma pack(push,1)
+typedef struct flif_RGBA { uint8_t r,g,b,a; } flif_RGBA;
+#pragma pack(pop)
+
+
+
 
 // we're ready at this point...
 
@@ -432,7 +455,7 @@ stream encode_as_etc1_etcpak( const void *rgba, int w, int h, int bpp = 32, int 
     /*int*/ quality = 0;
 
     {
-        auto bmp = std::make_shared<Bitmap>( (const uint32_t *)rgba, w * h * (bpp/8), w, h, std::numeric_limits<uint>::max() );
+        auto bmp = std::make_shared<Bitmap>( (const uint32_t *)rgba, w * h * (bpp/8), w, h, (std::numeric_limits<uint>::max)() );
 
         auto bd = std::make_shared<BlockData>( bmp->Size(), false );
         auto block = std::make_shared<BlockBitmap>( bmp, Channels::RGB );
@@ -848,8 +871,141 @@ namespace spot
         }
     }
 
+
+    void hsl2rgb( const float *hsl, float *rgb )
+    {
+        // Given H,S,L in range of 0-1
+        // Returns a Color (RGB struct) in range of 0-1
+
+        const float &h = hsl[0];
+        const float &s = hsl[1];
+        const float &l = hsl[2];
+
+        float &r = rgb[0];
+        float &g = rgb[1];
+        float &b = rgb[2];
+
+        float v;
+
+        r = l;   // default to gray
+        g = l;
+        b = l;
+        v = (l <= 0.5f) ? (l * (1.f + s)) : (l + s - l * s);
+
+        if (v > 0)
+        {
+              float m = l + l - v;
+              float sv = (v - m ) / v;
+              float h6 = h * 6.f;
+              int sextant = (int)h6;
+              float fract = h6 - sextant;
+              float vsf = v * sv * fract;
+              float mid1 = m + vsf;
+              float mid2 = v - vsf;
+
+              switch (sextant)
+              {
+                    default:
+                    case 0:
+                          r = v;
+                          g = mid1;
+                          b = m;
+                          break;
+                    case 1:
+                          r = mid2;
+                          g = v;
+                          b = m;
+                          break;
+                    case 2:
+                          r = m;
+                          g = v;
+                          b = mid1;
+                          break;
+                    case 3:
+                          r = m;
+                          g = mid2;
+                          b = v;
+                          break;
+                    case 4:
+                          r = mid1;
+                          g = m;
+                          b = v;
+                          break;
+                    case 5:
+                          r = v;
+                          g = m;
+                          b = mid2;
+                          break;
+              }
+        }
+    }
+
+    template<bool rgba, bool hsla>
+    void rgb2hsl( const float *rgb, float *hsl, int pixels )
+    {
+        // Given a Color (RGB Struct) in range of 0-1
+        // Return H,S,L in range of 0-1
+
+        while( --pixels >= 0 ) {
+            const float &r = *rgb++;
+            const float &g = *rgb++;
+            const float &b = *rgb++;
+            float v;
+            float m;
+            float vm;
+            float r2, g2, b2;
+
+            float h = 0; // default to black
+            float s = 0;
+            float l;
+            v = ( r > g ? r : g );
+            v = ( v > b ? v : b );
+            m = ( r < g ? r : g );
+            m = ( m < b ? m : b );
+            l = (m + v) / 2.f;
+            if (l > 0.f) {
+                vm = v - m;
+                s = vm;
+                if (s > 0.f) {
+                    s /= (l <= 0.5f) ? (v + m ) : (2.f - v - m) ;
+                    r2 = (v - r) / vm;
+                    g2 = (v - g) / vm;
+                    b2 = (v - b) / vm;
+                    /**/ if (r == v) {
+                        h = (g == m ? 5.f + b2 : 1.f - g2);
+                    }
+                    else if (g == v) {
+                        h = (b == m ? 1.f + r2 : 3.f - b2);
+                    }
+                    else {
+                        h = (r == m ? 3.f + g2 : 5.f - r2);
+                    }
+                    h /= 6.f;
+                }
+            }
+            *hsl++ = h;
+            *hsl++ = s;
+            *hsl++ = l;
+            if( hsla ) {
+                if( rgba ) {
+                    *hsl++ = *rgb++;
+                } else {
+                    *hsl++ = 1;
+                }
+            } else {
+                if( rgba ) {
+                    rgb++;
+                }            
+            }
+        }
+    }
+
+    void rgb2hsl( const float *rgb, float *hsl ) {
+        rgb2hsl<0,0>( rgb, hsl, 1 );
+    }
+
     std::vector<std::string> list_supported_inputs() {
-        const char *str[] = { "bmp", "dds", "gif", "hdr", "jpg", "pic", "pkm", "png", "psd", "pvr", "svg", "tga", "webp", "pnm", "pug", "crn", 0 };
+        const char *str[] = { "bmp", "dds", "gif", "hdr", "jpg", "pic", "pkm", "png", "psd", "pvr", "svg", "tga", "webp", "pnm", "pug", "crn", "exr", "flif", 0 };
         std::vector<std::string> list;
         for( int i = 0; str[i]; ++i ) {
             list.push_back( str[i] );
@@ -865,8 +1021,8 @@ namespace spot
         return list;
     }
 
-    enum { NO_DELETER, STBI_DELETER, FREE_DELETER, NEW_DELETER, NEW_ARRAY_DELETER };
-    enum { UNK, IS_STBI, IS_CRN, IS_WEBP, IS_SVG, IS_KTX, IS_PVR3, IS_PKM };
+    enum { NO_DELETER, STBI_DELETER, FREE_DELETER, NEW_DELETER, NEW_ARRAY_DELETER, FLIF_DELETER };
+    enum { UNK, IS_STBI, IS_CRN, IS_WEBP, IS_SVG, IS_KTX, IS_PVR3, IS_PKM, IS_EXR, IS_FLIF };
 
     bool info( stream &sm, const void *src, size_t len ) {
         stream blank = {};
@@ -878,6 +1034,17 @@ namespace spot
         if( !len ) return false;
 
         const char *src8 = (const char *)src;
+
+        // flif?
+        bool is_flif = len > 4 && (src8[0] == 'F' && src8[1] == 'L' && src8[2] == 'I' && src8[3] == 'F');
+        if( is_flif ) {
+            sm.w = (( src8[0x6] << 8) | src8[0x7] );
+            sm.h = (( src8[0x8] << 8) | src8[0x9] );
+            sm.comp = 4;
+            sm.hint = IS_FLIF;
+            sm.deleter = FLIF_DELETER;
+            return true;
+        }
 
         // crn?
         bool is_crn = len > 2 && (src8[0] == 'H' && src8[1] == 'x');
@@ -988,6 +1155,40 @@ namespace spot
         return false;
     }
 
+    bool infof( stream &sm, const void *src, size_t len ) {
+        stream blank = {};
+        sm = blank;
+        sm.in = src;
+        sm.len = len;
+
+        if( !src ) return false;
+        if( !len ) return false;
+
+        const char *src8 = (const char *)src;
+
+        // exr?
+        if( 1 ) {
+            EXRImage exrImage;
+            InitEXRImage(&exrImage);
+            const char *err = 0;
+
+            int ret = ParseMultiChannelEXRHeaderFromMemory(&exrImage, (const unsigned char *)src8, &err);
+            if (ret == 0) {
+                sm.w = exrImage.width;
+                sm.h = exrImage.height;
+                sm.comp = exrImage.num_channels;
+                sm.hint = IS_EXR;
+                sm.deleter = STBI_DELETER;
+                // @todo { free exrImage }
+                return true;
+            }
+
+            // @todo { free exrImage }
+        }
+
+        return false;
+    }
+
     bool decode( stream &dst, const stream &src )
     {
         if( !src.in || !dst.out ) {
@@ -1003,6 +1204,7 @@ namespace spot
         // decode
         int imageWidth = 0, imageHeight = 0, imageComp = 0, imageHint = 0;
         int deleter = NO_DELETER;
+        int copier = 1;
 
         if( !src.hint ) {
             if( !info( dst, src.in, src.len ) ) {
@@ -1019,6 +1221,67 @@ namespace spot
 
         switch( imageHint ) {
         default:
+        break;
+        case IS_FLIF: {
+            int64_t bytes_read = -1;
+            int32_t quality = 100;
+            const char *ptr = (const char *) src.in;
+            size_t len = src.len;
+
+            FLIF_DECODER* d = NULL;
+            d = flif_create_decoder();
+            if (d) {
+                // set the quality to 100% (a lower value will decode a lower-quality preview)
+                flif_decoder_set_quality(d, 100);             // this is the default, so can be omitted
+                // set the scale-down factor to 1 (a higher value will decode a downsampled preview)
+                flif_decoder_set_scale(d, 1);                 // this is the default, so can be omitted
+                // set the maximum size to twice the screen resolution; if an image is larger, a downsampled preview will be decoded
+                //flif_decoder_set_resize(d, 100, 200);   // the default is to not have a maximum size
+                if (flif_decoder_decode_memory(d, ptr, len)) {
+                    // no callback was set, so we manually call our callback function to render the final image/frames
+                    //printf("%lli bytes read, rendering at quality=%.2f%%\n",(long long int) bytes_read, 0.01*quality);
+
+                    FLIF_IMAGE* image = flif_decoder_get_image(d, 0);
+                    if (image) { 
+                        uint32_t nb_frames = flif_decoder_num_images(d);
+                        uint32_t w = flif_image_get_width(image);
+                        uint32_t h = flif_image_get_height(image);
+                        uint32_t bpp = flif_image_get_nb_channels(image);
+
+                        imageuc = (unsigned char *)malloc( imageWidth * imageHeight * imageComp );
+                        if(imageuc) {
+                            unsigned char *out = imageuc;
+
+                            // Produce a texture
+                            for (int f = 0; f < nb_frames; f++) {
+                                FLIF_IMAGE* image = flif_decoder_get_image(d, f);
+                                if (image) {
+                                    uint32_t w = flif_image_get_width(image);
+                                    uint32_t h = flif_image_get_height(image);
+                                    uint32_t bpp = flif_image_get_nb_channels(image);
+                                    int frame_delay = flif_image_get_frame_delay(image);
+
+                                    // Copy the decoded pixels into texture
+                                    flif_RGBA *row = new flif_RGBA [w];
+                                    for (uint32_t r=0; r<h; r++) {
+                                        flif_image_read_row_RGBA8(image, r, row, w * sizeof(flif_RGBA));
+                                        for(uint32_t x=0; x<w; ++x) {
+                                            auto &px = row[x];
+                                            *out++ = px.r;
+                                            *out++ = px.g;
+                                            *out++ = px.b;
+                                            *out++ = px.a;
+                                        }
+                                    }
+                                    delete [] row;
+                                }
+                            }
+                        }
+                    }
+                }
+                flif_destroy_decoder(d);
+            }
+        }
         break;
         case IS_CRN :{
             std::string dds;
@@ -1143,7 +1406,9 @@ namespace spot
             return false;
         }
 
-        memcpy( dst.out, imageuc, imageWidth * imageHeight * imageComp ); //dst.len );
+        if( copier ) {
+            memcpy( dst.out, imageuc, imageWidth * imageHeight * imageComp ); //dst.len );
+        }
 
         /****/ if( deleter == STBI_DELETER ) {
             stbi_image_free( imageuc );
@@ -1161,6 +1426,175 @@ namespace spot
         dst.d = 1;
         dst.comp = imageComp;
         dst.fmt = RGBA_8888;
+
+        return true;
+    }
+
+    bool decodef( stream &dst, const stream &src )
+    {
+        if( !src.in || !dst.out ) {
+            dst.error = "Error: invalid pointer provided";
+            return false;
+        }
+
+        if( !src.len || !dst.len ) {
+            dst.error = "Error: invalid size provided";
+            return false;
+        }
+
+        // decode
+        int imageWidth = 0, imageHeight = 0, imageComp = 0, imageHint = 0;
+        int deleter = NO_DELETER;
+        int copier = 1;
+
+        if( !src.hint ) {
+            if( !infof( dst, src.in, src.len ) ) {
+                return false;
+            }
+        }
+
+        imageWidth = src.w;
+        imageHeight = src.h;
+        imageComp = src.comp;
+        imageHint = src.hint;
+
+        float *imageuc = 0;
+
+        switch( imageHint ) {
+        default:
+        break;
+        case IS_EXR: {
+
+                EXRImage exrImage;
+                InitEXRImage(&exrImage);
+                const char *err = 0;
+
+                {
+                    int ret = ParseMultiChannelEXRHeaderFromMemory(&exrImage, (const unsigned char *)src.in, &err);
+                    if (ret != 0) {
+                        if( err ) dst.error = err;
+                      break;
+                    }
+                }
+
+                // Read HALF channel as FLOAT.
+                for (int i = 0; i < exrImage.num_channels; i++) {
+                    if (exrImage.pixel_types[i] == TINYEXR_PIXELTYPE_HALF) {
+                        exrImage.requested_pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT;
+                    }
+                }
+
+                {
+                    int ret = LoadMultiChannelEXRFromMemory(&exrImage, (const unsigned char *)src.in, &err);
+                    if (ret != 0) {
+                        if( err ) dst.error = err;
+                        break;
+                    }
+                }
+
+                // RGBA
+                int idxR = -1;
+                int idxG = -1;
+                int idxB = -1;
+                int idxA = -1;
+                for (int c = 0; c < exrImage.num_channels; c++) {
+                    /**/ if ('R' == exrImage.channel_names[c][0]) idxR = c;
+                    else if ('G' == exrImage.channel_names[c][0]) idxG = c;
+                    else if ('B' == exrImage.channel_names[c][0]) idxB = c;
+                    else if ('A' == exrImage.channel_names[c][0]) idxA = c;
+                }
+
+                if (idxR == -1) {
+                    dst.error = "R channel not found\n";
+                    // @todo { free exrImage }
+                    break;
+                }
+
+                if (idxG == -1) {
+                    dst.error = "G channel not found\n";
+                    // @todo { free exrImage }
+                    break;
+                }
+
+                if (idxB == -1) {
+                    dst.error = "B channel not found\n";
+                    // @todo { free exrImage }
+                    break;
+                }
+
+                imageuc = (float *)1;
+                copier = 0;
+                deleter = NO_DELETER;
+
+                float *ptr = (float *)dst.out;
+                bool do_rgba = (src.comp < 3 ? 3 : src.comp) > 3;
+                float *ch_r = reinterpret_cast<float **>(exrImage.images)[idxR];
+                float *ch_g = reinterpret_cast<float **>(exrImage.images)[idxG];
+                float *ch_b = reinterpret_cast<float **>(exrImage.images)[idxB];
+                float *ch_a = reinterpret_cast<float **>(exrImage.images)[idxA != -1 ? idxA : idxR];
+                if( do_rgba ) {
+                    if (idxA != -1) {
+                        for (int i = 0; i < exrImage.width * exrImage.height; i++) {
+                            *ptr++ = ch_r[i];
+                            *ptr++ = ch_g[i];
+                            *ptr++ = ch_b[i];
+                            *ptr++ = ch_a[i];
+                        } 
+                        rgb2hsl<1,1>( (const float *)dst.out, (float *)dst.out, exrImage.width * exrImage.height );
+                    } else {
+                        for (int i = 0; i < exrImage.width * exrImage.height; i++) {
+                            *ptr++ = ch_r[i];
+                            *ptr++ = ch_g[i];
+                            *ptr++ = ch_b[i];
+                        }
+                        rgb2hsl<1,0>( (const float *)dst.out, (float *)dst.out, exrImage.width * exrImage.height );
+                    }
+                } else {
+                        for (int i = 0; i < exrImage.width * exrImage.height; i++) {
+                            *ptr++ = ch_r[i];
+                            *ptr++ = ch_g[i];
+                            *ptr++ = ch_b[i];
+                        } 
+                        rgb2hsl<0,0>( (const float *)dst.out, (float *)dst.out, exrImage.width * exrImage.height );
+                }
+
+                imageWidth = exrImage.width;
+                imageHeight = exrImage.height;
+
+                // @todo { free exrImage }
+            }
+
+            break;
+        };
+
+        if( !imageuc )
+        {
+            // assert( false );
+            // return yellow/black texture instead?
+            dst.error = "Error! unable to decode image";
+            return false;
+        }
+
+        if( copier ) {
+            memcpy( dst.out, imageuc, imageWidth * imageHeight * imageComp * sizeof(float) );
+        }
+
+        /****/ if( deleter == STBI_DELETER ) {
+            stbi_image_free( imageuc );
+        } else if( deleter == FREE_DELETER ) {
+            free(imageuc);
+        } else if( deleter == NEW_DELETER ) {
+            delete imageuc;
+        } else if( deleter == NEW_ARRAY_DELETER ) {
+            delete [] (imageuc);
+        }
+        imageuc = 0;
+
+        dst.w = imageWidth;
+        dst.h = imageHeight;
+        dst.d = 1;
+        dst.comp = imageComp;
+        dst.fmt = imageComp > 3 ? RGBA_8888F : RGB_888F;
 
         return true;
     }
@@ -1226,128 +1660,31 @@ namespace spot
         return decode32( (const unsigned char *)buffer.data(), buffer.size(), w, h, comp, error );
     }
 
-    void hsl2rgb( const float *hsl, float *rgb )
-    {
-        // Given H,S,L in range of 0-1
-        // Returns a Color (RGB struct) in range of 0-1
-
-        const float &h = hsl[0];
-        const float &s = hsl[1];
-        const float &l = hsl[2];
-
-        float &r = rgb[0];
-        float &g = rgb[1];
-        float &b = rgb[2];
-
-        float v;
-
-        r = l;   // default to gray
-        g = l;
-        b = l;
-        v = (l <= 0.5f) ? (l * (1.f + s)) : (l + s - l * s);
-
-        if (v > 0)
-        {
-              float m = l + l - v;
-              float sv = (v - m ) / v;
-              float h6 = h * 6.f;
-              int sextant = (int)h6;
-              float fract = h6 - sextant;
-              float vsf = v * sv * fract;
-              float mid1 = m + vsf;
-              float mid2 = v - vsf;
-
-              switch (sextant)
-              {
-                    default:
-                    case 0:
-                          r = v;
-                          g = mid1;
-                          b = m;
-                          break;
-                    case 1:
-                          r = mid2;
-                          g = v;
-                          b = m;
-                          break;
-                    case 2:
-                          r = m;
-                          g = v;
-                          b = mid1;
-                          break;
-                    case 3:
-                          r = m;
-                          g = mid2;
-                          b = v;
-                          break;
-                    case 4:
-                          r = mid1;
-                          g = m;
-                          b = v;
-                          break;
-                    case 5:
-                          r = v;
-                          g = m;
-                          b = mid2;
-                          break;
-              }
+    std::vector<float> decodef( const void *src, size_t size, size_t *w, size_t *h, size_t *comp, std::string *error ) {
+        stream in = {};
+        stream out = {};
+        if( infof( in, src, size ) ) {
+            if( in.is_valid() ) {
+                std::vector<float> dst( in.w * in.h * 4 /*srccomp*/ );
+                out.out = &dst[0];
+                out.len = int(dst.size());
+                out.fmt = RGBA_8888F;
+                if( decodef( out, in ) ) {
+                    if( w     ) *w = size_t(out.w);
+                    if( h     ) *h = size_t(out.h);
+                    if( comp  ) *comp = size_t(out.comp);
+                    if( error ) *error = out.error;
+                    return dst;
+                }
+            }
         }
+        return std::vector<float>();
     }
 
-    void rgb2hsl( const float *rgb, float *hsl )
-    {
-        // Given a Color (RGB Struct) in range of 0-1
-        // Return H,S,L in range of 0-1
-
-        const float &r = rgb[0];
-        const float &g = rgb[1];
-        const float &b = rgb[2];
-        float v;
-        float m;
-        float vm;
-        float r2, g2, b2;
-
-        float &h = hsl[0];
-        float &s = hsl[1];
-        float &l = hsl[2];
-
-        h = 0; // default to black
-        s = 0;
-        v = ( r > g ? r : g );
-        v = ( v > b ? v : b );
-        m = ( r < g ? r : g );
-        m = ( m < b ? m : b );
-        l = (m + v) / 2.f;
-        if (l <= 0.f)
-        {
-              return;
-        }
-        vm = v - m;
-        s = vm;
-        if (s > 0.f)
-        {
-              s /= (l <= 0.5f) ? (v + m ) : (2.f - v - m) ;
-        }
-        else
-        {
-              return;
-        }
-        r2 = (v - r) / vm;
-        g2 = (v - g) / vm;
-        b2 = (v - b) / vm;
-        if (r == v)
-        {
-              h = (g == m ? 5.f + b2 : 1.f - g2);
-        }
-        else if (g == v)
-        {
-              h = (b == m ? 1.f + r2 : 3.f - b2);
-        }
-        else
-        {
-              h = (r == m ? 3.f + g2 : 5.f - r2);
-        }
-        h /= 6.f;
+    std::vector<float> decodef( const std::string &filename, size_t *w, size_t *h, size_t *comp, std::string *error ) {
+        std::ifstream ifs( filename.c_str(), std::ios::binary );
+        std::vector<char> buffer( (std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+        return decodef( (const float *)buffer.data(), buffer.size(), w, h, comp, error );
     }
 
     pixel::operator color() const {

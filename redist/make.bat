@@ -1,6 +1,6 @@
 move /y spot.hpp ..
 deps\amalgamate -p spot.hpp -w "*.*pp;*.c;*.h" spot.c   ..\spotc.c
-deps\amalgamate -p spot.hpp -w "*.*pp;*.c;*.h" spot.cpp ..\spot.cpp
+deps\amalgamate -p spot.hpp -w "*.*pp;*.cc;*.c;*.h" spot.cpp ..\spot.cpp
 deps\fart.exe -- ..\spotc.c  "#line" "//#line"
 deps\fart.exe -- ..\spotc.c  "#pragma once" "//#pragma once"
 deps\fart.exe -- ..\spot.cpp "#line" "//#line"

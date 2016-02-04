@@ -1,0 +1,9 @@
+
+This is the reference implementation of FLIF, copyright (C) 2016 Jon Sneyers and Pieter Wuille.
+
+It is released under the terms of the GNU Lesser General Public License version 3 or later (LGPLv3+).
+The license terms can be found in the files LICENSE_GPL and LICENSE_LGPL.
+
+The code of the FLIF decoder (not the encoder!) is released under the terms of the Apache 2.0 license.
+The library libflif_dec is available under these terms.
+A copy of the Apache 2.0 license is available in the file LICENSE_Apache2.

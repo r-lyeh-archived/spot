@@ -3,7 +3,7 @@
 - Spot is a compact and embeddable pixel/image library (C++11).
 - Spot supports both RGBA/HSLA pixel types.
 - Spot provides both pixel and image algebra for pixel/image manipulation.
-- Spot loads WEBP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PVR2/3 (ETC1/PVRTC), KTX (ETC1/PVRTC), PKM (ETC1), HDR, PIC, PNM (PPM/PGM), CRN, PUG and vectorial SVG files.
+- Spot loads WEBP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PVR2/3 (ETC1/PVRTC), KTX (ETC1/PVRTC), PKM (ETC1), HDR, PIC, PNM (PPM/PGM), CRN, PUG, FLIF, EXR and vectorial SVG files.
 - Spot saves WEBP, JPG, PNG, TGA, BMP, DDS, PVR3 (PVRTC), KTX (ETC1), PKM (ETC1) and PUG files.
 - Spot is self-contained. All libraries are included and amalgamated.
 - Spot is tiny. A couple of source files.
@@ -17,6 +17,8 @@
 | BMP files | yes | yes |
 | CRN files | yes | no |
 | DDS DXT1/2/3/4/5 files | yes | yes |
+| EXR files | yes | no |
+| FLIF files | yes | no |
 | GIF files | yes | no |
 | HDR files | yes | no |
 | JPG files (progressive) | yes | no |
@@ -190,6 +192,7 @@ class image : public std::vector<color>
 - [DDS writer](http://www.lonesock.net/soil.html) by Jonathan Dummer (Public Domain).
 - [etc1utils](redist/deps/soil2/etc1_utils.h) by Google Inc (Apache 2.0 license).
 - [etcpak](https://bitbucket.org/wolfpld/etcpak/wiki/Home) by Bartosz Taudul (BSD-3 license).
+- [flif](https://github.com/flif-hub/flif) by Jon Sneyers and Pieter Wuille (Apache 2.0 license).
 - [jpge](https://code.google.com/p/jpeg-compressor/) by Rich Geldreich (Public Domain).
 - [libwebp](https://code.google.com/p/webp/) by Google Inc (BSD license).
 - [lodepng](http://lodev.org/lodepng/) by Lode Vandevenne (ZLIB license).
@@ -200,6 +203,7 @@ class image : public std::vector<color>
 - [rg_etc1](https://code.google.com/p/rg-etc1/) by Rich Geldreich (ZLIB license).
 - [soil2](https://bitbucket.org/SpartanJ/soil2/) by Martin Lucas Golini and Jonathan Dummer (Public Domain).
 - [stb_image](http://github.com/nothings/stb) by Sean Barrett (Public Domain).
+- [tinyexr](https://github.com/syoyo/tinyexr) by Syoyo Fujita (BSD3 license).
 - [unifont](https://github.com/r-lyeh/unifont) (ZLIB license).
 
 ## notes
@@ -207,6 +211,7 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.1.2 (2016/02/04): flif and exr loading support
 - v2.1.1 (2016/02/01): update nanosvg; add small optimizations
 - v2.1.0 (2015/09/28): faster image pasting
 - v2.0.9 (2015/05/12): safer decoding on invalid images
