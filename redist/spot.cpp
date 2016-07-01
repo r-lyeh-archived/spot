@@ -102,11 +102,13 @@
 #define STBI_REALLOC(p,x) spot_realloc(p,x)
 */
 #define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_STDIO
-#include "deps/soil2/stb_image.c"
-#include "deps/soil2/stb_image_write.c"
+#include "deps/soil2/stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "deps/soil2/stb_image_write.h"
 
-#define DDS_header DDS_header2
+//#define DDS_header DDS_header2
 #   include "deps/soil2/image_DXT.h"
 #   include "deps/soil2/image_DXT.c"
 #define clamp clamp2
@@ -122,7 +124,7 @@
 #include "deps/lodepng/lodepng.cpp"
 
 #include "deps/crn2dds/crn2dds.hpp"
-#undef DDS_header
+//#undef DDS_header
 #define DDS_header DDS_header3
 #include "deps/crn2dds/crn2dds.cpp"
 
@@ -140,6 +142,7 @@
 
 namespace spot {
 #include "deps/containers/pvr3.hpp"
+#include "deps/containers/pvr2.hpp"
 #include "deps/containers/pkm.hpp"
 #include "deps/containers/ktx.hpp"
 #include "deps/pvrtc/PVRTDecompress.cpp"
@@ -393,6 +396,20 @@ bool load( std::string &data, const std::string &name, uint32_t reserved = 0 ) {
 }
 */
 
+stream encode_as_rgba( const void *rgba, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
+    stream out = {};
+    if( bpp >= 24 ) {
+        out.w = w;
+        out.h = h;
+        out.d = 1;
+        out.fmt = bpp ==32 ? pvr3::table1::SPOT_RGBA8888 : pvr3::table1::SPOT_RGB888;
+        out.len = w * h * (bpp/8);
+        out.out = new uint8_t [ reserved + out.len ];
+        memcpy( ((uint8_t*)(out.out)) + reserved, rgba, out.len );
+    }
+    return out;
+}
+
 stream encode_as_pvrtc( const void *bgra, int w, int h, int bpp = 32, int quality = 0, unsigned reserved = 0 ) {
     stream out = {};
 
@@ -420,6 +437,7 @@ stream encode_as_pvrtc( const void *bgra, int w, int h, int bpp = 32, int qualit
     out.d = 1;
     out.out = dst;
     out.len = len;
+    out.comp = bpp == 24 ? 3 : 4;
 
     /****/ if( bpp == 24 ) {
         Javelin::RgbBitmap bitmap( w, h );
@@ -548,7 +566,6 @@ stream encode_as_etc1( const void *rgba, int w, int h, int bpp = 32, int quality
     return out;
 }
 
-
 bool save_pkm_etc1( std::string &out, const stream &sm, unsigned reserved ) {
     if( sm.is_valid() && sm.is_etc1() ) {
         pkm p;
@@ -568,10 +585,10 @@ bool save_pkm_etc1( std::string &out, const stream &sm, unsigned reserved ) {
     return out.clear(), false;
 }
 
-bool save_pvr( std::string &out, const stream &sm, unsigned reserved = 0 ) {
+bool save_pvr3( std::string &out, const stream &sm, unsigned reserved = 0 ) {
     if( sm.is_valid() /* && sm.is_etc1() */ ) {
         pvr3 pvr;
-        pvr.hd.version = tole32(0x03525650);     // 0x03525650, if endianess does not match ; 0x50565203, if endianess does match
+        pvr.hd.version = tole32(0x50565203);     // 0x03525650, if endianess does not match ; 0x50565203, if endianess does match
         pvr.hd.flags = tole32(0);                // 0x02, colour values within the texture have been pre-multiplied by the alpha values
         pvr.hd.pixel_format_1 = tole32(sm.fmt);  // see table1 above
         pvr.hd.pixel_format_2 = tole32(0);       // 0
@@ -588,6 +605,52 @@ bool save_pvr( std::string &out, const stream &sm, unsigned reserved = 0 ) {
 
         out.resize( sizeof(pvr3::header) + reserved );
         memcpy( &out[0], &pvr.hd, sizeof(pvr.hd) );
+        return true;
+    }
+    return out.clear(), false;
+}
+
+template<int version>
+bool save_pvr( std::string &out, const stream &sm, unsigned reserved = 0 ) {
+    if( sm.is_valid() /* && sm.is_etc1() */ ) {
+        pvr2 pvr = {};
+
+        int32_t sizeofheader = version <= 1 ? 44 : 52, bpp = sm.comp * 8;
+        pvr.hd.version = tole32(sizeofheader);          // 44 for v1, 52 for v2
+        pvr.hd.height = tole32(sm.h);                   // 1d texture
+        pvr.hd.width = tole32(sm.w);                    // 2d texture; >= 1
+
+        pvr.hd.num_mipmaps = tole32(0);                 // num levels of mipmaps, excluding the top level (mipmap flag should be set if >= 1)
+        pvr.hd.pixel_format = sm.fmt;                   // see pvr2::table1 above // OGL_PVRTC4;
+        switch( pvr.hd.pixel_format ) {                 // convert pvr3 to pvr1/2 pixel format
+          default:
+          break; case pvr3::table1::SPOT_RGB888:     bpp = 24, pvr.hd.pixel_format = OGL_RGB_888;
+          break; case pvr3::table1::SPOT_RGBA8888:   bpp = 32, pvr.hd.pixel_format = OGL_RGBA_8888;
+          break; case pvr3::table1::PVRTC_2BPP_RGB:  bpp = 2, pvr.hd.pixel_format = OGL_PVRTC2; // MGLPT_PVRTC2;
+          break; case pvr3::table1::PVRTC_2BPP_RGBA: bpp = 2, pvr.hd.pixel_format = OGL_PVRTC2; // MGLPT_PVRTC2;
+          break; case pvr3::table1::PVRTC_4BPP_RGB:  bpp = 4, pvr.hd.pixel_format = OGL_PVRTC4; // MGLPT_PVRTC4;
+          break; case pvr3::table1::PVRTC_4BPP_RGBA: bpp = 4, pvr.hd.pixel_format = OGL_PVRTC4; // MGLPT_PVRTC4;
+          //break; case pvr3::table1::PVRTC_II_2BPP: pvr.hd.pixel_format = MGLPT_PVRTC2_2;
+          //break; case pvr3::table1::PVRTC_II_4BPP: pvr.hd.pixel_format = MGLPT_PVRTC2_4;
+        }
+        pvr.hd.flags[0] = sm.comp > 3 ? 0x80 : 0x00;    // alpha channel present
+        pvr.hd.flags[1] = 0x00;
+        pvr.hd.flags[2] = 0x00;
+
+        pvr.hd.surface_size = tole32(sm.w*sm.h*(bpp+7)/8);// in bytes
+        pvr.hd.bpp = tole32(bpp);                       // 32 bpp
+
+        pvr.hd.r_mask = tole32(0x00000000);             // for<=32bpp: 0xff00000 in Red Mask would indicate that the last 8 bits in each pixel are used as red.
+        pvr.hd.g_mask = tole32(0x00000000);             // for<=32bpp: 0xff00000 in Green Mask would indicate that the last 8 bits in each pixel are used as green.
+        pvr.hd.b_mask = tole32(0x00000000);             // for<=32bpp: 0x00000ff in Blue Mask would indicate that the first 8 bits in each pixel are used as blue.
+        pvr.hd.a_mask = tole32(0x00000000);             // for<=32bpp: 0x00000ff in Alpha Mask would indicate that the first 8 bits in each pixel are used as alpha.
+
+        pvr.hd.magic = tole32(0x21525650);              // "PVR!"
+        pvr.hd.num_surfaces = tole32(1);                // num surfaces in texture array; >= 1
+        if( devel ) pvr.debug(std::cout);
+
+        out.resize( sizeofheader + reserved );
+        memcpy( &out[0], &pvr.hd, sizeofheader );
         return true;
     }
     return out.clear(), false;
@@ -628,9 +691,17 @@ bool save_ktx( std::string &out, const stream &sm, unsigned reserved = 0 ) {
     return out.clear(), false;
 }
 
-std::string save_pvr( const stream &sm, unsigned reserved = 0 ) {
+std::string save_pvr3( const stream &sm, unsigned reserved = 0 ) {
     std::string out;
-    return save_pvr( out, sm, reserved ) ? out : std::string();
+    return save_pvr3( out, sm, reserved ) ? out : std::string();
+}
+std::string save_pvr2( const stream &sm, unsigned reserved = 0 ) {
+    std::string out;
+    return save_pvr<2>( out, sm, reserved ) ? out : std::string();
+}
+std::string save_pvr1( const stream &sm, unsigned reserved = 0 ) {
+    std::string out;
+    return save_pvr<1>( out, sm, reserved ) ? out : std::string();
 }
 std::string save_ktx( const stream &sm, unsigned reserved = 0 ) {
     std::string out;
@@ -689,23 +760,6 @@ std::string save_pkm_etc1( const stream &sm, unsigned reserved = 0 ) {
 namespace spot
 {
     namespace internals {
-
-        int32_t swapbe( int32_t v ) {
-            // swap bytes on big endian only; little remains unchanged
-            union autodetect {
-                int word;
-                char byte[ sizeof(int) ];
-                autodetect() : word(1)
-                {}
-            } _;
-            bool is_big = _.byte[0] == 0;
-            if( is_big ) {
-                unsigned char *p = (unsigned char *)&v;
-                std::swap( p[0], p[3] );
-                std::swap( p[1], p[2] );
-            }
-            return v;
-        }
 
         std::string encode_png( unsigned w, unsigned h, const void *data, unsigned stride ) {
             if( w && h && data && stride ) {
@@ -770,8 +824,8 @@ namespace spot
                 for( unsigned x = 0; x < w * h; ++x, ptr += 4 ) alpha[ x ] = *ptr;
                 std::string png = encode_png( w, h, alpha.data(), 1 );
                 // glue and footer
-                int32_t size24 = internals::swapbe( int32_t(jpg.size()) );
-                int32_t size08 = internals::swapbe( int32_t(png.size()) );
+                int32_t size24 = hton32( int32_t(jpg.size()) );
+                int32_t size08 = hton32( int32_t(png.size()) );
                 if( size24 && size08 ) {
                     std::stringstream ss;
                     ss.write( &jpg[0], size24 );
@@ -801,14 +855,60 @@ namespace spot
             return std::string();
         }
 
-        std::string encode_pvr( unsigned w, unsigned h, const void *data, unsigned quality ) {
+        std::string encode_pvr3( unsigned w, unsigned h, const void *data, unsigned quality ) {
             if( w && h && data && quality ) {
                 //stream sm = encode_as_etc1( data, w, h, 32, quality );
                 stream sm = encode_as_pvrtc( data, w, h, 32, quality );
                 std::stringstream ss;
-                ss << save_pvr(sm);
+                ss << save_pvr3(sm);
                 ss.write( (const char *)sm.in, sm.len );
                 delete [] ((uint8_t *)sm.out);
+                return ss.str();
+            }
+            return std::string();
+        }
+
+        std::string encode_pvr2(unsigned w, unsigned h, const void *data, unsigned quality) {
+            if (w && h && data && quality) {
+                stream sm = /*quality < 100 ? */ encode_as_pvrtc( data, w, h, 32, quality )
+                  /*: encode_as_rgba( data, w, h, 32, quality )*/;
+                std::stringstream ss;
+                ss << save_pvr2(sm);
+                ss.write((const char *)sm.in, sm.len);
+                delete [] ((uint8_t *)sm.out);
+                return ss.str();
+            }
+            return std::string();
+        }
+
+        std::string encode_pvr( unsigned w, unsigned h, const void *data, unsigned quality ) {
+            return encode_pvr3( w, h, data, quality );
+        }
+
+        std::string encode_ccz( unsigned w, unsigned h, const void *data, unsigned quality ) {
+            if( w && h && data && quality ) {
+                std::string pvr2 = encode_pvr2(w, h, data, quality);
+                if( pvr2.empty() ) {
+                    return std::string();
+                }
+
+                using namespace miniz; // from tinyexr
+                std::vector<unsigned char> buf( mz_compressBound(pvr2.size()) );
+                mz_ulong zlen = (mz_ulong)( buf.size() );
+                if( MZ_OK != mz_compress2( (unsigned char *)&buf[0], &zlen, (const unsigned char *)&pvr2[0], (mz_ulong)pvr2.size(), 9 ) ) {
+                    return std::string();
+                }
+
+                std::stringstream ss;
+                int16_t typ = hton16(0), ver = hton16(2);
+                int32_t pad = 0, len = hton32( (uint32_t)pvr2.size() );
+                ss.write("CCZ!", 4);
+                ss.write((const char *) &typ, 2); // compression type (0=zlib)
+                ss.write((const char *) &ver, 2); // version
+                ss.write((const char *) &pad, 4); // reserved
+                ss.write((const char *) &len, 4); // original stream size
+                ss.write((const char *) &buf[0], zlen); // compressed stream
+
                 return ss.str();
             }
             return std::string();
@@ -1005,7 +1105,7 @@ namespace spot
     }
 
     std::vector<std::string> list_supported_inputs() {
-        const char *str[] = { "bmp", "dds", "gif", "hdr", "jpg", "pic", "pkm", "png", "psd", "pvr", "svg", "tga", "webp", "pnm", "pug", "crn", "exr", "flif", 0 };
+        const char *str[] = { "bmp", "dds", "gif", "hdr", "jpg", "pic", "pkm", "png", "psd", "pvr", "ccz", "svg", "tga", "webp", "pnm", "pug", "crn", "exr", "flif", 0 };
         std::vector<std::string> list;
         for( int i = 0; str[i]; ++i ) {
             list.push_back( str[i] );
@@ -1013,7 +1113,7 @@ namespace spot
         return list;
     }
     std::vector<std::string> list_supported_outputs() {
-        const char *str[] = { "bmp", "dds", "jpg", "png", "tga", "webp", "pug", "ktx", "pvr", "pkm", 0 };
+        const char *str[] = { "bmp", "dds", "jpg", "png", "tga", "webp", "pug", "ktx", "pvr", "ccz", "pkm", 0 };
         std::vector<std::string> list;
         for( int i = 0; str[i]; ++i ) {
             list.push_back( str[i] );
@@ -1022,7 +1122,7 @@ namespace spot
     }
 
     enum { NO_DELETER, STBI_DELETER, FREE_DELETER, NEW_DELETER, NEW_ARRAY_DELETER, FLIF_DELETER };
-    enum { UNK, IS_STBI, IS_CRN, IS_WEBP, IS_SVG, IS_KTX, IS_PVR3, IS_PKM, IS_EXR, IS_FLIF };
+    enum { UNK, IS_STBI, IS_CRN, IS_WEBP, IS_SVG, IS_KTX, IS_PVR3, IS_CCZ, IS_PKM, IS_EXR, IS_FLIF };
 
     bool info( stream &sm, const void *src, size_t len ) {
         stream blank = {};
@@ -1054,6 +1154,18 @@ namespace spot
             sm.comp = 4;
             sm.hint = IS_CRN;
             sm.deleter = STBI_DELETER;
+            return true;
+        }
+
+        // ccz?
+        bool is_ccz = len > 4 && (src8[0] == 'C' && src8[1] == 'C' && src8[2] == 'Z' && src8[3] == '!');
+        if( is_ccz ) {
+            uint32_t len = (uint32_t)ntoh32( *(uint32_t *)(&src8[16-4]) );
+            sm.h = 1;
+            sm.w = len * 4; // assumes pvrt4, give a rough estimation :( 
+            sm.fmt = -1;
+            sm.comp = 4;
+            sm.hint = IS_CCZ;
             return true;
         }
 
@@ -1132,11 +1244,11 @@ namespace spot
         // svg ?
         if( src8[0] == '<' || src8[0] == ' ' || src8[0] == '\t' ) {
             // Load SVG, parse and rasterize
-            char *str = new char[ len + 1 ];
-            memcpy( str, src, len );
+            std::vector<char> str( len + 1 );
+            memcpy( &str[0], src, len );
             str[ len ] = '\0';
 
-            NSVGimage *image = nsvgParse( str, "px" /*units*/, 96.f /* dpi */ );
+            NSVGimage *image = nsvgParse( &str[0], "px" /*units*/, 96.f /* dpi */ );
             if( image ) {
                 double scale = 1.0;
                 sm.hint = IS_SVG;
@@ -1145,10 +1257,7 @@ namespace spot
                 sm.comp = 4;
 
                 nsvgDelete(image);
-                delete [] str;
                 return sm.deleter = FREE_DELETER, true;
-            } else {
-                delete [] str;
             }
         }
 
@@ -1179,11 +1288,11 @@ namespace spot
                 sm.comp = exrImage.num_channels;
                 sm.hint = IS_EXR;
                 sm.deleter = STBI_DELETER;
-                // @todo { free exrImage }
+                FreeEXRImage(&exrImage);
                 return true;
             }
 
-            // @todo { free exrImage }
+            FreeEXRImage(&exrImage);
         }
 
         return false;
@@ -1329,16 +1438,33 @@ namespace spot
             deleter = FREE_DELETER;
         }
         break;
+        case IS_CCZ: {
+            using namespace miniz;
+            const unsigned char *src8 = (const unsigned char *)src.in;
+            mz_ulong len = (mz_ulong)ntoh32( *(uint32_t *)(&src8[16-4]) );
+            std::vector<unsigned char> ptr( len );
+            if( MZ_OK == mz_uncompress( &ptr[0], &len, &src8[16], src.len - 16 ) ) {
+                stream in2 = {};
+                if( info( in2, &ptr[0], len ) ) {
+                    if( in2.is_valid() ) {
+                        return decode( dst, (const stream &)in2 );
+                    }
+                }
+            }
+            return false;
+        }
+        break;
         case IS_STBI: {
             imageuc = stbi_load_from_memory( (const stbi_uc *)src.in, src.len, &imageWidth, &imageHeight, &imageComp, src.comp < 3 ? 3 : src.comp );
             imageComp = src.comp < 3 ? 3 : src.comp;
+
             deleter = STBI_DELETER;
             // if it is a .pug file, then decode alpha
             const char *magic = (const char *)src.in + src.len - 4;
             if( magic[0] == 'p' && magic[1] == 'u' && magic[2] == 'g' && magic[3] == '1' ) {
                 imageComp = 4;
-                const int32_t color_size = internals::swapbe( *(const int32_t *)((const char *)src.in + src.len - 12) );
-                const int32_t alpha_size = internals::swapbe( *(const int32_t *)((const char *)src.in + src.len - 8) );
+                const int32_t color_size = ntoh32( *(const int32_t *)((const char *)src.in + src.len - 12) );
+                const int32_t alpha_size = ntoh32( *(const int32_t *)((const char *)src.in + src.len - 8) );
                 int w2 = 0, h2 = 0, bpp2 = 0;
                 stbi_uc *alpha = stbi_load_from_memory( (const unsigned char *)src.in + color_size, alpha_size, &w2, &h2, &bpp2, 1 );
                 if( alpha ) {
@@ -1360,11 +1486,11 @@ namespace spot
         break;
         case IS_SVG :{
             // Load SVG, parse and rasterize
-            char *str = new char[ src.len + 1 ];
-            memcpy( str, src.in, src.len );
+            std::vector<char> str( src.len + 1 );
+            memcpy( &str[0], src.in, src.len );
             str[ src.len ] = '\0';
 
-            NSVGimage *image = nsvgParse( str, "px" /*units*/, 96.f /* dpi */ );
+            NSVGimage *image = nsvgParse( &str[0], "px" /*units*/, 96.f /* dpi */ );
             if( image ) {
                 // Create rasterizer (can be used to render multiple images).
                 static struct install {
@@ -1393,8 +1519,6 @@ namespace spot
                 }
                 nsvgDelete(image);
             }
-
-            delete [] str;
         }
         };
 

@@ -153,10 +153,16 @@ int query_tex_rectangle_capability( void );
 /*	for using DXT compression	*/
 static int has_DXT_capability = SOIL_CAPABILITY_UNKNOWN;
 int query_DXT_capability( void );
+#define SOIL_GL_SRGB			0x8C40
+#define SOIL_GL_SRGB_ALPHA		0x8C42
 #define SOIL_RGB_S3TC_DXT1		0x83F0
 #define SOIL_RGBA_S3TC_DXT1		0x83F1
 #define SOIL_RGBA_S3TC_DXT3		0x83F2
 #define SOIL_RGBA_S3TC_DXT5		0x83F3
+#define SOIL_GL_COMPRESSED_SRGB_S3TC_DXT1_EXT  0x8C4C
+#define SOIL_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
+static int has_sRGB_capability = SOIL_CAPABILITY_UNKNOWN;
+int query_sRGB_capability( void );
 typedef void (APIENTRY * P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
 static P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC soilGlCompressedTexImage2D = NULL;
 
@@ -1412,6 +1418,7 @@ unsigned int
 	unsigned int tex_id;
 	unsigned int internal_texture_format = 0, original_texture_format = 0;
 	int DXT_mode = SOIL_CAPABILITY_UNKNOWN;
+	int sRGB_texture = query_sRGB_capability() == SOIL_CAPABILITY_PRESENT && ( flags & SOIL_FLAG_SRGB_COLOR_SPACE );;
 	int max_supported_size;
 	int iwidth = *width;
 	int iheight = *height;
@@ -1612,18 +1619,10 @@ unsigned int
 		switch( channels )
 		{
 		case 1:
-			#if defined( SOIL_X11_PLATFORM ) || defined( SOIL_PLATFORM_WIN32 ) || defined( SOIL_PLATFORM_OSX )
-			original_texture_format = isAtLeastGL3() ? GL_RED : GL_LUMINANCE;
-			#else
 			original_texture_format = GL_LUMINANCE;
-			#endif
 			break;
 		case 2:
-			#if defined( SOIL_X11_PLATFORM ) || defined( SOIL_PLATFORM_WIN32 ) || defined( SOIL_PLATFORM_OSX )
-			original_texture_format = isAtLeastGL3() ? GL_RG : GL_LUMINANCE_ALPHA;
-			#else
 			original_texture_format = GL_LUMINANCE_ALPHA;
-			#endif
 			break;
 		case 3:
 			original_texture_format = GL_RGB;
@@ -1643,14 +1642,27 @@ unsigned int
 				if( (channels & 1) == 1 )
 				{
 					/*	1 or 3 channels = DXT1	*/
-					internal_texture_format = SOIL_RGB_S3TC_DXT1;
+					internal_texture_format = sRGB_texture ? SOIL_GL_COMPRESSED_SRGB_S3TC_DXT1_EXT : SOIL_RGB_S3TC_DXT1;
 				} else
 				{
 					/*	2 or 4 channels = DXT5	*/
-					internal_texture_format = SOIL_RGBA_S3TC_DXT5;
+					internal_texture_format = sRGB_texture ? SOIL_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : SOIL_RGBA_S3TC_DXT5;
 				}
 			}
 		}
+		else if ( sRGB_texture )
+		{
+			switch( channels )
+			{
+			case 3:
+				internal_texture_format = SOIL_GL_SRGB;
+				break;
+			case 4:
+				internal_texture_format = SOIL_GL_SRGB_ALPHA;
+				break;
+			}
+		}
+
 		/*  bind an OpenGL texture ID	*/
 		glBindTexture( opengl_texture_type, tex_id );
 		check_for_GL_errors( "glBindTexture" );
@@ -2919,6 +2931,29 @@ int query_BGRA8888_capability( void )
 	}
 	/*	let the user know if we can do cubemaps or not	*/
 	return has_BGRA8888_capability;
+}
+
+int query_sRGB_capability( void )
+{
+	if ( has_sRGB_capability == SOIL_CAPABILITY_UNKNOWN )
+	{
+		if (0 == SOIL_GL_ExtensionSupported(
+				"GL_EXT_texture_sRGB" )
+				&&
+			0 == SOIL_GL_ExtensionSupported(
+				"GL_EXT_sRGB" )
+				&&
+			0 == SOIL_GL_ExtensionSupported(
+				"EXT_sRGB" ) )
+		{
+			has_sRGB_capability = SOIL_CAPABILITY_NONE;
+		} else
+		{
+			has_sRGB_capability = SOIL_CAPABILITY_PRESENT;
+		}
+	}
+
+	return has_sRGB_capability;
 }
 
 int query_ETC1_capability( void )

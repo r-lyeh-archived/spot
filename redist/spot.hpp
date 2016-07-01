@@ -17,7 +17,8 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.1.2" /* (2016/02/04) - flif and exr loading support
+#define SPOT_VERSION "2.1.3" /* (2016/07/01) - ccz loading and saving support (pvr.ccz); bump soil2 and stb_image
+#define SPOT_VERSION "2.1.2" // (2016/02/04) - flif and exr loading support
 #define SPOT_VERSION "2.1.1" // (2016/02/01) - update nanosvg; add small optimizations
 #define SPOT_VERSION "2.1.0" // (2015/09/28) - faster image pasting
 #define SPOT_VERSION "2.0.9" // (2015/05/12) - safer decoding on invalid images
@@ -74,6 +75,7 @@ namespace spot
         std::string encode_wbp( unsigned w, unsigned h, const void *data, unsigned quality );
         std::string encode_ktx( unsigned w, unsigned h, const void *data, unsigned quality );
         std::string encode_pvr( unsigned w, unsigned h, const void *data, unsigned quality );
+        std::string encode_ccz( unsigned w, unsigned h, const void *data, unsigned quality );
         std::string encode_pkm( unsigned w, unsigned h, const void *data, unsigned quality );
         bool writefile( const std::string &filename, const std::string &data );
     }
@@ -678,6 +680,7 @@ namespace spot
                 if( ext == "pug" ) return save_as_pug( filename, quality );
                 if( ext == "ktx" ) return save_as_ktx( filename, quality );
                 if( ext == "pvr" ) return save_as_pvr( filename, quality );
+                if( ext == "ccz" ) return save_as_ccz( filename, quality );
                 if( ext == "pkm" ) return save_as_pkm( filename, quality );
                 if( ext == "webp") return save_as_webp( filename, quality );
             }
@@ -802,6 +805,21 @@ namespace spot
                 return false;
             }
             return internals::writefile( filename, encode_as_pvr( quality ) );
+        }
+
+        std::string encode_as_ccz( unsigned quality = SPOT_FAST_QUALITY ) const {
+            if( this->empty() || w * h <= 0 ) {
+                return std::string();
+            }
+            std::vector<unsigned char> pixels = bgra();
+            return internals::encode_ccz( w, h, &pixels[0], quality );
+        }
+
+        bool save_as_ccz( const std::string &filename, unsigned quality = SPOT_FAST_QUALITY ) const {
+            if( this->empty() || w * h <= 0 ) {
+                return false;
+            }
+            return internals::writefile( filename, encode_as_ccz( quality ) );
         }
 
         std::string encode_as_pkm( unsigned quality = SPOT_FAST_QUALITY ) const {

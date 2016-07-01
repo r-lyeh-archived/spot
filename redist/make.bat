@@ -49,6 +49,11 @@ viewer ..\images\test.pkm
 viewer ..\images\female_hair002_df.pvr
 viewer ..\images\fallingwater.jpg
 viewer ..\images\test-dxt5.crn
+viewer ..\images\test-dxt1.pvr
+viewer ..\images\test-dxt1.pvr.ccz
+viewer ..\images\login.pvr
+viewer ..\images\login.pvr.ccz
+viewer ..\images\etc1.pvr.ccz
 
 for %%i in (..\samples\*.cc) do cl /Fe%%~ni.exe %%i -I .. ..\spot*.c* %* %devel% /EHsc /nologo /link setargv.obj
 

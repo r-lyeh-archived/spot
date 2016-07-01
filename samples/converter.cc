@@ -143,6 +143,9 @@ bool convert( const std::string &in, const std::string &out, const std::string &
         else if( hint == "pvr" ) {
             ok = img.save_as_pvr( out, quality );
         }
+        else if( hint == "ccz" ) {
+            ok = img.save_as_ccz( out, quality );
+        }
         else if( hint == "pkm" ) {
             ok = img.save_as_pkm( out, quality );
         }

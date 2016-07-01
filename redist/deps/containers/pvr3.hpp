@@ -34,6 +34,10 @@ struct pvr3 {
         EAC_R11_SIGNED = 26,
         EAC_RG11_UNSIGNED = 27,
         EAC_RG11_SIGNED = 28,
+
+        // spot extensions
+        SPOT_RGB888 = 254,
+        SPOT_RGBA8888 = 255,
     };
     enum table2 {
         UNSIGNED_BYTE_NORMALIZED = 0,

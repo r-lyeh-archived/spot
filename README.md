@@ -3,8 +3,8 @@
 - Spot is a compact and embeddable pixel/image library (C++11).
 - Spot supports both RGBA/HSLA pixel types.
 - Spot provides both pixel and image algebra for pixel/image manipulation.
-- Spot loads WEBP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PVR2/3 (ETC1/PVRTC), KTX (ETC1/PVRTC), PKM (ETC1), HDR, PIC, PNM (PPM/PGM), CRN, PUG, FLIF, EXR and vectorial SVG files.
-- Spot saves WEBP, JPG, PNG, TGA, BMP, DDS, PVR3 (PVRTC), KTX (ETC1), PKM (ETC1) and PUG files.
+- Spot loads WEBP, JPG, progressive JPG, PNG, TGA, DDS DXT1/2/3/4/5, BMP, PSD, GIF, PVR2/3 (ETC1/PVRTC), KTX (ETC1/PVRTC), PKM (ETC1), HDR, PIC, PNM (PPM/PGM), CRN, PUG, FLIF, CCZ, EXR and vectorial SVG files.
+- Spot saves WEBP, JPG, PNG, TGA, BMP, DDS, PVR3 (PVRTC), KTX (ETC1), PKM (ETC1), CCZ and PUG files.
 - Spot is self-contained. All libraries are included and amalgamated.
 - Spot is tiny. A couple of source files.
 - Spot is cross-platform.
@@ -15,6 +15,7 @@
 | File format  | Read | Write |
 | :-------------|:-------------:| :-----:|
 | BMP files | yes | yes |
+| CCZ (PVR2) files | yes* | yes* |
 | CRN files | yes | no |
 | DDS DXT1/2/3/4/5 files | yes | yes |
 | EXR files | yes | no |
@@ -71,17 +72,20 @@ class image : public std::vector<color>
     bool save_as_pug( const std::string &filename, unsigned quality = 90 ) const;
     bool save_as_jpg( const std::string &filename, unsigned quality = 90 ) const;
     bool save_as_webp(const std::string &filename, unsigned quality = 90 ) const;
-    bool save_as_ktx( const std::string &filename, unsigned quality = 10 ) const;
-    bool save_as_pvr( const std::string &filename, unsigned quality = 10 ) const;
-    bool save_as_pkm( const std::string &filename, unsigned quality = 10 ) const;
+    bool save_as_ktx( const std::string &filename, unsigned quality = 90 ) const;
+    bool save_as_pvr( const std::string &filename, unsigned quality = 90 ) const;
+    bool save_as_pkm( const std::string &filename, unsigned quality = 90 ) const;
+    bool save_as_ccz( const std::string &filename, unsigned quality = 90 ) const;
 
     std::string encode_as_png( unsigned stride = 4 ) const;
     std::string encode_as_pug( unsigned quality = 90 ) const;
     std::string encode_as_jpg( unsigned quality = 90 ) const;
     std::string encode_as_webp(unsigned quality = 90 ) const;
-    std::string encode_as_ktx( unsigned quality = 10 ) const;
-    std::string encode_as_pvr( unsigned quality = 10 ) const;
-    std::string encode_as_pkm( unsigned quality = 10 ) const;
+    std::string encode_as_ktx( unsigned quality = 90 ) const;
+    std::string encode_as_pvr( unsigned quality = 90 ) const;
+    std::string encode_as_pvr( unsigned quality = 90 ) const;
+    std::string encode_as_pkm( unsigned quality = 90 ) const;
+    std::string encode_as_ccz( unsigned quality = 90 ) const;
 
     inline const size_t size() const;
     bool loaded() const;
@@ -211,6 +215,7 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.1.3 (2016/07/01): ccz loading and saving support (pvr.ccz); bump soil2 and stb_image
 - v2.1.2 (2016/02/04): flif and exr loading support
 - v2.1.1 (2016/02/01): update nanosvg; add small optimizations
 - v2.1.0 (2015/09/28): faster image pasting
