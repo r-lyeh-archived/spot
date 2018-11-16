@@ -17,7 +17,8 @@
 
 #pragma once
 
-#define SPOT_VERSION "2.1.3" /* (2016/07/01) - ccz loading and saving support (pvr.ccz); bump soil2 and stb_image
+#define SPOT_VERSION "2.1.4" /* (2018/11/16) - bump up soil2, stb_image(s), cimg
+#define SPOT_VERSION "2.1.3" // (2016/07/01) - ccz loading and saving support (pvr.ccz); bump soil2 and stb_image
 #define SPOT_VERSION "2.1.2" // (2016/02/04) - flif and exr loading support
 #define SPOT_VERSION "2.1.1" // (2016/02/01) - update nanosvg; add small optimizations
 #define SPOT_VERSION "2.1.0" // (2015/09/28) - faster image pasting

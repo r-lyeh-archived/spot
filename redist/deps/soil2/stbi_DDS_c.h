@@ -241,7 +241,7 @@ void stbi_decode_DXT_color_block(
 }
 
 static int stbi__dds_info( stbi__context *s, int *x, int *y, int *comp, int *iscompressed ) {
-	int flags,is_compressed,has_alpha,cubemap_faces;
+	int flags,is_compressed,has_alpha;
 	DDS_header header={0};
 
 	if( sizeof( DDS_header ) != 128 )
@@ -280,14 +280,9 @@ static int stbi__dds_info( stbi__context *s, int *x, int *y, int *comp, int *isc
 
 	is_compressed = (header.sPixelFormat.dwFlags & DDPF_FOURCC) / DDPF_FOURCC;
 	has_alpha = (header.sPixelFormat.dwFlags & DDPF_ALPHAPIXELS) / DDPF_ALPHAPIXELS;
-	cubemap_faces = (header.sCaps.dwCaps2 & DDSCAPS2_CUBEMAP) / DDSCAPS2_CUBEMAP;
-	/*	I need cubemaps to have square faces	*/
-	cubemap_faces &= (header.dwWidth == header.dwHeight);
-	cubemap_faces *= 5;
-	cubemap_faces += 1;
 
 	*x = header.dwWidth;
-	*y = header.dwHeight * cubemap_faces;
+	*y = header.dwHeight;
 
 	if ( !is_compressed ) {
 		*comp = 3;
@@ -341,7 +336,7 @@ int stbi__dds_info_from_file(FILE *f,                  int *x, int *y, int *comp
 }
 #endif
 
-static stbi_uc * stbi__dds_load(stbi__context *s, int *x, int *y, int *comp, int req_comp)
+static void * stbi__dds_load(stbi__context *s, int *x, int *y, int *comp, int req_comp)
 {
 	//	all variables go up front
 	stbi_uc *dds_data = NULL;
@@ -402,7 +397,7 @@ static stbi_uc * stbi__dds_load(stbi__context *s, int *x, int *y, int *comp, int
 			dwPitchOrLinearSize == 0	*/
 		//	passed all the tests, get the RAM for decoding
 		sz = (s->img_x)*(s->img_y)*4*cubemap_faces;
-		dds_data = (unsigned char*)STBI_MALLOC( sz );
+		dds_data = (unsigned char*)malloc( sz );
 		/*	do this once for each face	*/
 		for( cf = 0; cf < cubemap_faces; ++ cf )
 		{
@@ -561,16 +556,16 @@ static stbi_uc * stbi__dds_load(stbi__context *s, int *x, int *y, int *comp, int
 }
 
 #ifndef STBI_NO_STDIO
-stbi_uc *stbi__dds_load_from_file   (FILE *f,                  int *x, int *y, int *comp, int req_comp)
+void *stbi__dds_load_from_file   (FILE *f,                  int *x, int *y, int *comp, int req_comp)
 {
 	stbi__context s;
 	stbi__start_file(&s,f);
 	return stbi__dds_load(&s,x,y,comp,req_comp);
 }
 
-stbi_uc *stbi__dds_load_from_path             (const char *filename,           int *x, int *y, int *comp, int req_comp)
+void *stbi__dds_load_from_path             (const char *filename,           int *x, int *y, int *comp, int req_comp)
 {
-   stbi_uc *data;
+   void *data;
    FILE *f = fopen(filename, "rb");
    if (!f) return NULL;
    data = stbi__dds_load_from_file(f,x,y,comp,req_comp);
@@ -579,14 +574,14 @@ stbi_uc *stbi__dds_load_from_path             (const char *filename,           i
 }
 #endif
 
-stbi_uc *stbi__dds_load_from_memory (stbi_uc const *buffer, int len, int *x, int *y, int *comp, int req_comp)
+void *stbi__dds_load_from_memory (stbi_uc const *buffer, int len, int *x, int *y, int *comp, int req_comp)
 {
 	stbi__context s;
    stbi__start_mem(&s,buffer, len);
    return stbi__dds_load(&s,x,y,comp,req_comp);
 }
 
-stbi_uc *stbi__dds_load_from_callbacks (stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp, int req_comp)
+void *stbi__dds_load_from_callbacks (stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp, int req_comp)
 {
 	stbi__context s;
    stbi__start_callbacks(&s, (stbi_io_callbacks *) clbk, user);

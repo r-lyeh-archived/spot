@@ -215,6 +215,7 @@ class image : public std::vector<color>
 - gcc users may need strict aliasing disabled if using CRN textures: add `-fno-strict-aliasing` compilation flag.
 
 ## changelog
+- v2.1.4 (2018/11/16): bump up soil2, stb_image(s), cimg
 - v2.1.3 (2016/07/01): ccz loading and saving support (pvr.ccz); bump soil2 and stb_image
 - v2.1.2 (2016/02/04): flif and exr loading support
 - v2.1.1 (2016/02/01): update nanosvg; add small optimizations

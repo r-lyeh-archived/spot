@@ -136,7 +136,7 @@ int stbi__pkm_info_from_file(FILE *f,                  int *x, int *y, int *comp
 }
 #endif
 
-static stbi_uc * stbi__pkm_load(stbi__context *s, int *x, int *y, int *comp, int req_comp)
+static void * stbi__pkm_load(stbi__context *s, int *x, int *y, int *comp, int req_comp)
 {
 	stbi_uc *pkm_data = NULL;
 	stbi_uc *pkm_res_data = NULL;
@@ -165,16 +165,16 @@ static stbi_uc * stbi__pkm_load(stbi__context *s, int *x, int *y, int *comp, int
 
 	compressedSize = etc1_get_encoded_data_size(width, height);
 
-	pkm_data = (stbi_uc *)STBI_MALLOC(compressedSize);
+	pkm_data = (stbi_uc *)malloc(compressedSize);
 	stbi__getn( s, pkm_data, compressedSize );
 
 	bpr = ((width * 3) + align) & ~align;
 	size = bpr * height;
-	pkm_res_data = (stbi_uc *)STBI_MALLOC(size);
+	pkm_res_data = (stbi_uc *)malloc(size);
 
 	res = etc1_decode_image((const etc1_byte*)pkm_data, (etc1_byte*)pkm_res_data, width, height, 3, bpr);
 
-	STBI_FREE( pkm_data );
+	free( pkm_data );
 
 	if ( 0 == res ) {
 		if( (req_comp <= 4) && (req_comp >= 1) ) {
@@ -187,23 +187,23 @@ static stbi_uc * stbi__pkm_load(stbi__context *s, int *x, int *y, int *comp, int
 
 		return (stbi_uc *)pkm_res_data;
 	} else {
-		STBI_FREE( pkm_res_data );
+		free( pkm_res_data );
 	}
 
 	return NULL;
 }
 
 #ifndef STBI_NO_STDIO
-stbi_uc *stbi__pkm_load_from_file   (FILE *f,                  int *x, int *y, int *comp, int req_comp)
+void *stbi__pkm_load_from_file   (FILE *f,                  int *x, int *y, int *comp, int req_comp)
 {
 	stbi__context s;
 	stbi__start_file(&s,f);
 	return stbi__pkm_load(&s,x,y,comp,req_comp);
 }
 
-stbi_uc *stbi__pkm_load_from_path             (char const*filename,           int *x, int *y, int *comp, int req_comp)
+void *stbi__pkm_load_from_path             (char const*filename,           int *x, int *y, int *comp, int req_comp)
 {
-   stbi_uc *data;
+   void *data;
    FILE *f = fopen(filename, "rb");
    if (!f) return NULL;
    data = stbi__pkm_load_from_file(f,x,y,comp,req_comp);
@@ -212,14 +212,14 @@ stbi_uc *stbi__pkm_load_from_path             (char const*filename,           in
 }
 #endif
 
-stbi_uc *stbi__pkm_load_from_memory (stbi_uc const *buffer, int len, int *x, int *y, int *comp, int req_comp)
+void *stbi__pkm_load_from_memory (stbi_uc const *buffer, int len, int *x, int *y, int *comp, int req_comp)
 {
    stbi__context s;
    stbi__start_mem(&s,buffer, len);
    return stbi__pkm_load(&s,x,y,comp,req_comp);
 }
 
-stbi_uc *stbi__pkm_load_from_callbacks (stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp, int req_comp)
+void *stbi__pkm_load_from_callbacks (stbi_io_callbacks const *clbk, void *user, int *x, int *y, int *comp, int req_comp)
 {
 	stbi__context s;
    stbi__start_callbacks(&s, (stbi_io_callbacks *) clbk, user);
