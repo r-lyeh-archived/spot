@@ -19640,7 +19640,7 @@ namespace jpge
 
 #include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
+// #include <malloc.h>
 
 #define JPGE_MAX(a,b) (((a)>(b))?(a):(b))
 #define JPGE_MIN(a,b) (((a)<(b))?(a):(b))
@@ -29482,6 +29482,8 @@ namespace crnd
 #include <stdio.h>
 #ifdef WIN32
 #include <memory.h>
+#elif defined(__APPLE__) || defined(__FreeBSD__)
+#include <malloc/malloc.h>
 #else
 #include <malloc.h>
 #endif
